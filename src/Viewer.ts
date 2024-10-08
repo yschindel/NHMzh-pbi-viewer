@@ -26,23 +26,38 @@ export class Viewer {
   private _options: VisualUpdateOptions;
   private _selectionIds!: DataPoint[];
   private _world: OBC.SimpleWorld<OBC.SimpleScene, OBC.SimpleCamera, OBC.SimpleRenderer>;
+  private _target: HTMLElement;
 
-  constructor() // options: VisualUpdateOptions // events: IVisualEventService, // selectionIds: DataPoint[], // selectionManager: ISelectionManager // target: any | HTMLDivElement,
-  {
-    // this.target = target;
+  constructor(
+    target: HTMLElement // options: VisualUpdateOptions // events: IVisualEventService, // selectionIds: DataPoint[], // selectionManager: ISelectionManager // target: any | HTMLDivElement,
+  ) {
+    console.log("Constructor start");
+    this._target = target;
+    console.log("Target assigned");
     // this._selectionManager = selectionManager;
     // this._selectionIds = selectionIds;
     // this._events = events;
     // this._options = options;
     this.initScene();
     // this.initFragment();
+    console.log("Constructor end");
   }
 
   /**
    * init scene
    */
   private initScene() {
+    console.log("init scene start");
     this.container = document.createElement("div");
+    console.log("container created");
+    this.container.className = "full-screen";
+    console.log("container class set");
+    this.container.style.zIndex = "2000";
+    console.log("container z-index set");
+    // this._target.style.cursor = "default";
+    console.log("container style set");
+    this._target.appendChild(this.container);
+    console.log("init scene", this);
 
     const worlds = this.components.get(OBC.Worlds);
     this._world = worlds.create<OBC.SimpleScene, OBC.SimpleCamera, OBC.SimpleRenderer>();

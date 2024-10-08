@@ -21,20 +21,10 @@ export class Visual implements IVisual {
   viewer: Viewer;
 
   constructor(options: VisualConstructorOptions) {
+    debugger;
     console.log("Visual constructor", options);
-    this.formattingSettingsService = new FormattingSettingsService();
     this.target = options.element;
-    this.updateCount = 0;
-    if (document) {
-      const new_p: HTMLElement = document.createElement("p");
-      new_p.appendChild(document.createTextNode("Update count:"));
-      const new_em: HTMLElement = document.createElement("em");
-      this.textNode = document.createTextNode(this.updateCount.toString());
-      new_em.appendChild(this.textNode);
-      new_p.appendChild(new_em);
-      this.target.appendChild(new_p);
-    }
-    this.viewer = new Viewer();
+    this.viewer = new Viewer(this.target);
   }
 
   public update(options: VisualUpdateOptions) {
