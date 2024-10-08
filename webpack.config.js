@@ -90,6 +90,10 @@ module.exports = {
     externals: { "powerbi-visuals-api": "null" },
     resolve: {
         extensions: [".tsx", ".ts", ".jsx", ".js", ".css"],
+        alias: {
+            src: path.resolve(__dirname, 'src/'),
+            assets: path.resolve(__dirname, 'assets/')
+          },
         fallback: {
             'fakeDefine': false // Add this line to provide a fallback
           }
@@ -97,7 +101,7 @@ module.exports = {
     output: {
         clean: true,
         path: path.join(__dirname, ".tmp", "drop"),
-        publicPath: 'assets',
+        publicPath: '/assets',
         filename: "[name]",
         library: pbivizFile.visual.guid,
         libraryTarget: "var",
