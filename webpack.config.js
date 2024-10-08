@@ -90,6 +90,9 @@ module.exports = {
     externals: { "powerbi-visuals-api": "null" },
     resolve: {
         extensions: [".tsx", ".ts", ".jsx", ".js", ".css"],
+        fallback: {
+            'fakeDefine': false // Add this line to provide a fallback
+          }
     },
     output: {
         clean: true,
