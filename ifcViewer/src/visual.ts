@@ -1,77 +1,68 @@
-/*
-*  Power BI Visual CLI
-*
-*  Copyright (c) Microsoft Corporation
-*  All rights reserved.
-*  MIT License
-*
-*  Permission is hereby granted, free of charge, to any person obtaining a copy
-*  of this software and associated documentation files (the ""Software""), to deal
-*  in the Software without restriction, including without limitation the rights
-*  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-*  copies of the Software, and to permit persons to whom the Software is
-*  furnished to do so, subject to the following conditions:
-*
-*  The above copyright notice and this permission notice shall be included in
-*  all copies or substantial portions of the Software.
-*
-*  THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-*  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-*  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-*  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-*  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-*  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-*  THE SOFTWARE.
-*/
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use strict";
-
 import powerbi from "powerbi-visuals-api";
-import { FormattingSettingsService } from "powerbi-visuals-utils-formattingmodel";
-import "./../style/visual.less";
-
+// use this for async function
+import "regenerator-runtime/runtime";
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisual = powerbi.extensibility.visual.IVisual;
-
-import { VisualFormattingSettingsModel } from "./settings";
+import IVisualHost = powerbi.extensibility.visual.IVisualHost;
+import IVisualEventService = powerbi.extensibility.IVisualEventService;
+import ISelectionManager = powerbi.extensibility.ISelectionManager;
+import ISelectionId = powerbi.visuals.ISelectionId;
+import DataViewTableRow = powerbi.DataViewTableRow;
+import "../style/visual.less";
+import { Viewer } from "./Viewer";
+// import { Viewer, DataPoint } from "./Viewer";
 
 export class Visual implements IVisual {
-    private target: HTMLElement;
-    private updateCount: number;
-    private textNode: Text;
-    private formattingSettings: VisualFormattingSettingsModel;
-    private formattingSettingsService: FormattingSettingsService;
+  private _target: HTMLElement;
+  private _visualHost: IVisualHost;
+  private _events: IVisualEventService;
+  private _selectionManager: ISelectionManager;
+  private _viewer: Viewer;
 
-    constructor(options: VisualConstructorOptions) {
-        console.log('Visual constructor', options);
-        this.formattingSettingsService = new FormattingSettingsService();
-        this.target = options.element;
-        this.updateCount = 0;
-        if (document) {
-            const new_p: HTMLElement = document.createElement("p");
-            new_p.appendChild(document.createTextNode("Update count:"));
-            const new_em: HTMLElement = document.createElement("em");
-            this.textNode = document.createTextNode(this.updateCount.toString());
-            new_em.appendChild(this.textNode);
-            new_p.appendChild(new_em);
-            this.target.appendChild(new_p);
-        }
-    }
+  constructor(options: VisualConstructorOptions) {
+    console.log("Visual constructor", options);
+    this._target = options.element;
+    this._visualHost = options.host;
+    this._events = options.host.eventService;
+    this._selectionManager = this._visualHost.createSelectionManager();
+    this._viewer = new Viewer();
+    this._viewer.loadModel("test");
+  }
 
-    public update(options: VisualUpdateOptions) {
-        this.formattingSettings = this.formattingSettingsService.populateFormattingSettingsModel(VisualFormattingSettingsModel, options.dataViews[0]);
+  update(options: VisualUpdateOptions): void {
+    console.log("Visual update", options);
+    // this._viewer.update(options);
+  }
 
-        console.log('Visual update', options);
-        if (this.textNode) {
-            this.textNode.textContent = (this.updateCount++).toString();
-        }
-    }
+  //   public update(options: VisualUpdateOptions) {
+  //     // first to start render
+  //     this._events.renderingStarted(options);
+  //     if (options.dataViews === undefined || options.dataViews === null) {
+  //       return;
+  //     }
+  //     const dataViews = options.dataViews;
 
-    /**
-     * Returns properties pane formatting model content hierarchies, properties and latest formatting values, Then populate properties pane.
-     * This method is called once every time we open properties pane or when the user edit any format property. 
-     */
-    public getFormattingModel(): powerbi.visuals.FormattingModel {
-        return this.formattingSettingsService.buildFormattingModel(this.formattingSettings);
-    }
+  //     if (!dataViews || !dataViews[0] || !dataViews[0].table || !dataViews[0].table.rows || !dataViews[0].table.columns) {
+  //       console.log("Test 1 FAILED. No data to draw table.");
+  //       // eslint-disable-next-line powerbi-visuals/no-inner-outer-html
+  //       this._target.innerHTML = "<p>Error</p>";
+  //       return;
+  //     }
+
+  //     const table = dataViews[0].table;
+  //     // make sure first column is expressID
+  //     const firstColExpressID = table.columns[0].displayName === "expressID";
+  //     if (!firstColExpressID) return;
+
+  //     const selectionIds: DataPoint[] = [];
+  //     table.rows.forEach((row: DataViewTableRow, rowIndex: number) => {
+  //       const expressID = row[0] as string;
+  //       const selectionId: ISelectionId = this._visualHost.createSelectionIdBuilder().withTable(table, rowIndex).createSelectionId();
+  //       selectionIds.push({ expressID, selectionId });
+  //     });
+  //     if (!this._viewer) this._viewer = new Viewer(this._target, this._selectionManager, selectionIds, this._events, options);
+  //   }
 }
