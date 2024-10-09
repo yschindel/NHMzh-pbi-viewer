@@ -31,33 +31,23 @@ export class Viewer {
   constructor(
     target: HTMLElement // options: VisualUpdateOptions // events: IVisualEventService, // selectionIds: DataPoint[], // selectionManager: ISelectionManager // target: any | HTMLDivElement,
   ) {
-    console.log("Constructor start");
     this._target = target;
-    console.log("Target assigned");
     // this._selectionManager = selectionManager;
     // this._selectionIds = selectionIds;
     // this._events = events;
     // this._options = options;
     this.initScene();
     // this.initFragment();
-    console.log("Constructor end");
   }
 
   /**
    * init scene
    */
   private initScene() {
-    console.log("init scene start");
     this.container = document.createElement("div");
-    console.log("container created");
     this.container.className = "full-screen";
-    console.log("container class set");
     this.container.style.zIndex = "2000";
-    console.log("container z-index set");
-    // this._target.style.cursor = "default";
-    console.log("container style set");
     this._target.appendChild(this.container);
-    console.log("init scene", this);
 
     const worlds = this.components.get(OBC.Worlds);
     this._world = worlds.create<OBC.SimpleScene, OBC.SimpleCamera, OBC.SimpleRenderer>();
@@ -98,11 +88,24 @@ export class Viewer {
   //     ( this.components.camera as OBC.SimpleCamera ).controls.setLookAt( pos.x, pos.y, pos.z, center.x, center.y, center.z, true );
   // }
 
-  async loadModel(fileName: string, baseUrl: string = "") {
+  /**
+   * Load the model from the server and add it to the scene
+   * @param fileName The name of the file to be loaded from the server
+   * @param ifc If true, the model is an IFC file
+   * @param baseUrl The base URL of the server
+   */
+  async loadModel(fileName: string, ifc: boolean = false, baseUrl: string = "") {
     const loader = new ModelLoader(fileName, baseUrl);
-    const file = await loader.load();
-    const group = this.fragmentManager.load(file);
-    this._world.scene.three.add(group);
+    if (ifc) {
+      const ifc = await loader.loadIfc();
+      this._world.scene.three.add(ifc);
+    } else {
+      const file = await loader.loadFragments();
+      if (file) {
+        const group = this.fragmentManager.load(file);
+        this._world.scene.three.add(group);
+      }
+    }
   }
 
   //   lastSelection!: any;

@@ -21,10 +21,9 @@ export class Visual implements IVisual {
   viewer: Viewer;
 
   constructor(options: VisualConstructorOptions) {
-    debugger;
-    console.log("Visual constructor", options);
     this.target = options.element;
     this.viewer = new Viewer(this.target);
+    this.viewer.loadModel("test");
   }
 
   public update(options: VisualUpdateOptions) {

@@ -10,8 +10,11 @@
   "scripts": {
     "pbiviz": "pbiviz",
     "package": "webpack",
+    "build": "webpack",
     "start": "webpack serve",
-    "lint": "npx eslint ."
+    "dev": "webpack serve",
+    "lint": "npx eslint .",
+    "cert": "pbiviz install-cert"
   },
   "dependencies": {
     "@thatopen/components": "^2.3.0",

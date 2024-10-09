@@ -28,7 +28,7 @@ module.exports = {
         "visual.js": pluginLocation,
     },
     target: "web",
-    devtool: "source-map",
+    devtool: "eval-source-map",
     mode: isProduction ? "production" : "development",
     optimization: {
         minimize: isProduction, // enable minimization for create *.pbiviz file less than 2 Mb, can be disabled for dev mode
@@ -129,6 +129,7 @@ module.exports = {
         headers: {
             "access-control-allow-origin": "*",
             "cache-control": "public, max-age=0",
+            "Content-Security-Policy": "connect-src https://app.powerbi.com http://localhost:3000"
         }
     },
     plugins: [
