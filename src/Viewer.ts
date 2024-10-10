@@ -31,6 +31,7 @@ export class Viewer {
   private _selectionIds!: DataPoint[];
   private _world: OBC.SimpleWorld<OBC.SimpleScene, OBC.SimpleCamera, OBC.SimpleRenderer>;
   private _target: HTMLElement;
+  private POWERBI = "powerbi";
 
   /**
    * Constructor for the Viewer class. Sets up the viewer ready to load a model.
@@ -86,18 +87,42 @@ export class Viewer {
     this._highlighter.config.hoverColor = new THREE.Color("#328da8");
     this._highlighter.config.selectionColor = new THREE.Color("#00639c");
     this._highlighter.setup({ world: this._world });
+
+    this._highlighter.events.select.onHighlight.add(() => {
+      this.clearSelection(this.POWERBI);
+      console.log(this._highlighter.selection);
+    });
   }
 
   highlight(selectionIds: string[]) {
     const fragmentIdMap = this.fragmentManager.guidToFragmentIdMap(selectionIds);
     if (!fragmentIdMap) return; // temp solution to workaround async loadModel not finished yet
-    this._highlighter.clear();
-    this._highlighter.add("test", new THREE.Color("#00639c"));
-    this._highlighter.highlightByID("test", fragmentIdMap);
+    this.clearSelection("select");
+    this.addSelection(this.POWERBI);
+    this._highlighter.highlightByID(this.POWERBI, fragmentIdMap);
+    console.log(this._highlighter.selection);
   }
 
   reset() {
-    this._highlighter.clear("test");
+    this.clearSelection(this.POWERBI);
+  }
+
+  /**
+   * Workaround because clear() throws an error if arguemt does not exist... WHYYY???
+   */
+  private clearSelection(name: string) {
+    if (this._highlighter.selection[name]) {
+      this._highlighter.clear(name);
+    }
+  }
+
+  /**
+   * Workaround because add() throws an error if arguemt already exists... WHYYY???
+   */
+  private addSelection(name: string) {
+    if (!this._highlighter.selection[name]) {
+      this._highlighter.add(name, new THREE.Color("#00639c"));
+    }
   }
 
   // private fitToZoom() {
