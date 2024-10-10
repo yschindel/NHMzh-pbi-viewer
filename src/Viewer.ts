@@ -1,5 +1,6 @@
 import powerbi from "powerbi-visuals-api";
 import * as OBC from "@thatopen/components";
+import * as OBF from "@thatopen/components-front";
 import * as THREE from "three";
 import IVisualEventService = powerbi.extensibility.IVisualEventService;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
@@ -15,19 +16,27 @@ export class Viewer {
   container: HTMLDivElement;
   fragmentManager = this.components.get(OBC.FragmentsManager);
   fileName: string; // The name of the file to be loaded from the server
-
+  modelLoaded: boolean = false;
   //   highlighter!: OBC.FragmentHighlighter;
   //   highlightMaterial!: THREE.MeshBasicMaterial;
   //   boundingBox!: THREE.Box3;
 
   //   private readonly target: any | HTMLDivElement;
+  private _firstUpdate: boolean = true;
   private _selectionManager: ISelectionManager;
+  private _highlightColor: THREE.Color = new THREE.Color(0, 0, 0);
+  private _highlighter: OBF.Highlighter;
   private _events: IVisualEventService;
   private _options: VisualUpdateOptions;
   private _selectionIds!: DataPoint[];
   private _world: OBC.SimpleWorld<OBC.SimpleScene, OBC.SimpleCamera, OBC.SimpleRenderer>;
   private _target: HTMLElement;
 
+  /**
+   * Constructor for the Viewer class. Sets up the viewer ready to load a model.
+   * Does not load a model.
+   * @param target The target element to render the viewer in
+   */
   constructor(
     target: HTMLElement // options: VisualUpdateOptions // events: IVisualEventService, // selectionIds: DataPoint[], // selectionManager: ISelectionManager // target: any | HTMLDivElement,
   ) {
@@ -37,11 +46,12 @@ export class Viewer {
     // this._events = events;
     // this._options = options;
     this.initScene();
+    this.setupHighlighter();
     // this.initFragment();
   }
 
   /**
-   * init scene
+   * Sets up the scene and adds an empty world to the container
    */
   private initScene() {
     this.container = document.createElement("div");
@@ -60,15 +70,34 @@ export class Viewer {
 
     this._world.camera.controls.setLookAt(12, 6, 8, 0, 0, -10);
     this._world.scene.setup();
+    this._world.scene.three.background = null;
 
     const grids = this.components.get(OBC.Grids);
     grids.create(this._world);
   }
 
-  update(options: VisualUpdateOptions) {
-    this._options = options;
-    // this.container.addEventListener("click", this.highlightOnClick);
-    // this._events.renderingFinished(options);
+  /**
+   * Sets up the highlighter for the model to allow user selection
+   */
+  private setupHighlighter() {
+    if (!this._world) return;
+
+    this._highlighter = this.components.get(OBF.Highlighter);
+    this._highlighter.config.hoverColor = new THREE.Color("#328da8");
+    this._highlighter.config.selectionColor = new THREE.Color("#00639c");
+    this._highlighter.setup({ world: this._world });
+  }
+
+  highlight(selectionIds: string[]) {
+    const fragmentIdMap = this.fragmentManager.guidToFragmentIdMap(selectionIds);
+    if (!fragmentIdMap) return; // temp solution to workaround async loadModel not finished yet
+    this._highlighter.clear();
+    this._highlighter.add("test", new THREE.Color("#00639c"));
+    this._highlighter.highlightByID("test", fragmentIdMap);
+  }
+
+  reset() {
+    this._highlighter.clear("test");
   }
 
   // private fitToZoom() {
@@ -94,41 +123,17 @@ export class Viewer {
    * @param ifc If true, the model is an IFC file
    * @param baseUrl The base URL of the server
    */
-  async loadModel(fileName: string, ifc: boolean = false, baseUrl: string = "") {
+  async loadModel(fileName: string, baseUrl: string = "") {
     const loader = new ModelLoader(fileName, baseUrl);
-    if (ifc) {
-      const ifc = await loader.loadIfc();
-      this._world.scene.three.add(ifc);
-    } else {
-      const file = await loader.loadFragments();
-      if (file) {
-        const group = this.fragmentManager.load(file);
-        this._world.scene.three.add(group);
-      }
+
+    const file = await loader.loadFragments();
+    if (file) {
+      const fragmentsGroup = this.fragmentManager.load(file);
+      this._world.scene.three.add(fragmentsGroup);
+      this.modelLoaded = true;
+      console.log("Loading model finished");
     }
   }
-
-  //   lastSelection!: any;
-  //   singleSelection: any = {
-  //     value: true,
-  //   };
-
-  //   private highlightOnClick = async (event: MouseEvent) => {
-  //     event.preventDefault();
-  //     const result = await this.highlighter.highlight("default", this.singleSelection.value, true);
-  //     if (result) {
-  //       this.lastSelection = {};
-
-  //       for (const fragment of result.fragments) {
-  //         const fragmentID = fragment.id;
-  //         this.lastSelection[fragmentID] = [result.id];
-  //       }
-  //       // find the selection by expressID
-  //       const selection = this._selectionIds.find((s: DataPoint) => s.expressID.toString() === result.id);
-  //       // if found notify to another visual
-  //       await this._selectionManager.select(selection.selectionId);
-  //     }
-  //   };
 }
 
 /**

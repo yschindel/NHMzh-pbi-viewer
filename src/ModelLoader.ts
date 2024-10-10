@@ -64,7 +64,6 @@ export class ModelLoader {
    * @returns The compressed file as an ArrayBuffer
    */
   async fetchFile(type: string = "frag"): Promise<ArrayBuffer> {
-    debugger;
     const res = await fetch(`${this.baseUrl}/download/${this.fileName}_${type}.gz`, {
       method: "GET",
       mode: "cors",

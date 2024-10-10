@@ -1,14 +1,9 @@
 {
   "dataRoles": [
     {
-      "displayName": "Category Data",
-      "name": "category",
-      "kind": "Grouping"
-    },
-    {
-      "displayName": "Measure Data",
-      "name": "measure",
-      "kind": "Measure"
+      "displayName": "Bim Model",
+      "name": "model",
+      "kind": "GroupingOrMeasure"
     }
   ],
   "objects": {
@@ -54,32 +49,27 @@
   },
   "dataViewMappings": [
     {
-      "categorical": {
-        "categories": {
+      "table": {
+        "rows": {
           "for": {
-            "in": "category"
+            "in": "model"
           },
           "dataReductionAlgorithm": {
-            "top": {}
-          }
-        },
-        "values": {
-          "select": [
-            {
-              "bind": {
-                "to": "measure"
-              }
+            "window": {
+              "count": 100000
             }
-          ]
+          }
         }
       }
     }
   ],
+  "supportsMultiVisualSelection": true,
+  "supportsHighlight": true,
   "privileges": [
     {
       "name": "WebAccess",
       "essential": true,
-      "parameters": ["http://localhost:3000", "wss://app.powerbi.com:8080/ws"]
+      "parameters": ["http://localhost:3000"]
     }
   ]
 }

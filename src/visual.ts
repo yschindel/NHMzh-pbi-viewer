@@ -7,35 +7,46 @@ import "./../style/visual.less";
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisual = powerbi.extensibility.visual.IVisual;
+import IVisualHost = powerbi.extensibility.visual.IVisualHost;
+import ISelectionId = powerbi.visuals.ISelectionId;
+import DataViewTableRow = powerbi.DataViewTableRow;
 
 import { VisualFormattingSettingsModel } from "./settings";
 
-import { Viewer } from "./Viewer";
+import { Viewer, DataPoint } from "./Viewer";
 
 export class Visual implements IVisual {
   private target: HTMLElement;
-  private updateCount: number;
-  private textNode: Text;
+  private visualHost: IVisualHost;
   private formattingSettings: VisualFormattingSettingsModel;
   private formattingSettingsService: FormattingSettingsService;
   viewer: Viewer;
 
   constructor(options: VisualConstructorOptions) {
     this.target = options.element;
+    this.visualHost = options.host;
     this.viewer = new Viewer(this.target);
     this.viewer.loadModel("test");
   }
 
   public update(options: VisualUpdateOptions) {
-    this.formattingSettings = this.formattingSettingsService.populateFormattingSettingsModel(
-      VisualFormattingSettingsModel,
-      options.dataViews[0]
-    );
+    // make sure the viewer setup has finished it's async operation
+    if (!this.viewer || !this.viewer.modelLoaded || !options.dataViews) return;
 
-    console.log("Visual update", options);
-    if (this.textNode) {
-      this.textNode.textContent = (this.updateCount++).toString();
+    const dataView = options.dataViews[0];
+    if (!dataView || !dataView.table || !dataView.table.rows || !dataView.table.columns) {
+      console.log("Invalid data");
+      this.target.innerHTML = "<p>Error</p>";
+      return;
     }
+
+    if (dataView.table.columns[0].displayName != "GlobalId") {
+      console.log("Invalid id field");
+      this.target.innerHTML = "<p>Use GlobalId as the id field</p>";
+      return;
+    }
+
+    this.handleSelection(dataView);
   }
 
   /**
@@ -45,4 +56,20 @@ export class Visual implements IVisual {
   public getFormattingModel(): powerbi.visuals.FormattingModel {
     return this.formattingSettingsService.buildFormattingModel(this.formattingSettings);
   }
+
+  /**
+   * Handles the selection part of the visual update
+   * @param dataView The data view to handle
+   */
+  private handleSelection(dataView: powerbi.DataView) {
+    const isFiltered = dataView.metadata.isDataFilterApplied !== undefined;
+    if (!isFiltered) {
+      // handle the case where the dashboard is not filtered
+      this.viewer.reset();
+      return;
+    }
+    const selectionIds = dataView.table.rows.map((row: DataViewTableRow) => row[0] as string);
+    this.viewer.highlight(selectionIds);
+  }
+  // const selectionId: ISelectionId = this.visualHost.createSelectionIdBuilder().withTable(table, rowIndex).createSelectionId();
 }
