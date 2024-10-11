@@ -10,30 +10,44 @@ import IVisual = powerbi.extensibility.visual.IVisual;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import ISelectionId = powerbi.visuals.ISelectionId;
 import DataViewTableRow = powerbi.DataViewTableRow;
+import ISelectionManager = powerbi.extensibility.ISelectionManager;
 
 import { VisualFormattingSettingsModel } from "./settings";
 
-import { Viewer, DataPoint } from "./Viewer";
+import { Viewer } from "./Viewer";
 
 export class Visual implements IVisual {
   private target: HTMLElement;
   private visualHost: IVisualHost;
   private formattingSettings: VisualFormattingSettingsModel;
   private formattingSettingsService: FormattingSettingsService;
-  viewer: Viewer;
+  private selectionManager: ISelectionManager;
+  private viewer: Viewer;
 
   constructor(options: VisualConstructorOptions) {
     this.target = options.element;
     this.visualHost = options.host;
-    this.viewer = new Viewer(this.target);
+    this.selectionManager = this.visualHost.createSelectionManager();
+    this.viewer = new Viewer(this.target, this.selectionManager);
     this.viewer.loadModel("test");
   }
 
   public update(options: VisualUpdateOptions) {
+    // build inital selectionIdMap to allow user selection in the viewer
+    const dataView = options.dataViews[0];
+    const table = dataView.table;
+    table.rows.forEach((row: DataViewTableRow, rowIndex: number) => {
+      const id = row[0] as string;
+      const selectionId: ISelectionId = this.visualHost.createSelectionIdBuilder().withTable(table, rowIndex).createSelectionId();
+      this.viewer.selectionIdMap.set(id, selectionId);
+    });
+
+    this.selectionManager.clear();
+
     // make sure the viewer setup has finished it's async operation
     if (!this.viewer || !this.viewer.modelLoaded || !options.dataViews) return;
 
-    const dataView = options.dataViews[0];
+    // const dataView = options.dataViews[0];
     if (!dataView || !dataView.table || !dataView.table.rows || !dataView.table.columns) {
       console.log("Invalid data");
       this.target.innerHTML = "<p>Error</p>";
@@ -71,5 +85,4 @@ export class Visual implements IVisual {
     const selectionIds = dataView.table.rows.map((row: DataViewTableRow) => row[0] as string);
     this.viewer.highlight(selectionIds);
   }
-  // const selectionId: ISelectionId = this.visualHost.createSelectionIdBuilder().withTable(table, rowIndex).createSelectionId();
 }

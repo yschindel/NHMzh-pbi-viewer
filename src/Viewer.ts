@@ -1,9 +1,8 @@
 import powerbi from "powerbi-visuals-api";
 import * as OBC from "@thatopen/components";
 import * as OBF from "@thatopen/components-front";
+import { FragmentIdMap } from "@thatopen/fragments";
 import * as THREE from "three";
-import IVisualEventService = powerbi.extensibility.IVisualEventService;
-import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import ISelectionManager = powerbi.extensibility.ISelectionManager;
 import ISelectionId = powerbi.visuals.ISelectionId;
 import { ModelLoader } from "./ModelLoader";
@@ -17,20 +16,18 @@ export class Viewer {
   fragmentManager = this.components.get(OBC.FragmentsManager);
   fileName: string; // The name of the file to be loaded from the server
   modelLoaded: boolean = false;
-  //   highlighter!: OBC.FragmentHighlighter;
-  //   highlightMaterial!: THREE.MeshBasicMaterial;
-  //   boundingBox!: THREE.Box3;
+  selectionIdMap: Map<string, ISelectionId> = new Map(); // map of GlobalId to selectionId
 
-  //   private readonly target: any | HTMLDivElement;
-  private _firstUpdate: boolean = true;
-  private _selectionManager: ISelectionManager;
-  private _highlightColor: THREE.Color = new THREE.Color(0, 0, 0);
-  private _highlighter: OBF.Highlighter;
-  private _events: IVisualEventService;
-  private _options: VisualUpdateOptions;
-  private _selectionIds!: DataPoint[];
-  private _world: OBC.SimpleWorld<OBC.SimpleScene, OBC.SimpleCamera, OBC.SimpleRenderer>;
   private _target: HTMLElement;
+  private _world: OBC.SimpleWorld<OBC.SimpleScene, OBC.SimpleCamera, OBC.SimpleRenderer>;
+  private _selectionManager: ISelectionManager;
+
+  private _highlighter: OBF.Highlighter;
+  private _selectionColor: THREE.Color = new THREE.Color("#00639c");
+  private _hoverColor: THREE.Color = new THREE.Color("#328da8");
+
+  private _hider: OBC.Hider;
+
   private POWERBI = "powerbi";
 
   /**
@@ -38,17 +35,12 @@ export class Viewer {
    * Does not load a model.
    * @param target The target element to render the viewer in
    */
-  constructor(
-    target: HTMLElement // options: VisualUpdateOptions // events: IVisualEventService, // selectionIds: DataPoint[], // selectionManager: ISelectionManager // target: any | HTMLDivElement,
-  ) {
+  constructor(target: HTMLElement, selectionManager: ISelectionManager) {
     this._target = target;
-    // this._selectionManager = selectionManager;
-    // this._selectionIds = selectionIds;
-    // this._events = events;
-    // this._options = options;
+    this._selectionManager = selectionManager;
     this.initScene();
     this.setupHighlighter();
-    // this.initFragment();
+    this.setupHider();
   }
 
   /**
@@ -84,31 +76,73 @@ export class Viewer {
     if (!this._world) return;
 
     this._highlighter = this.components.get(OBF.Highlighter);
-    this._highlighter.config.hoverColor = new THREE.Color("#328da8");
-    this._highlighter.config.selectionColor = new THREE.Color("#00639c");
+    this._highlighter.config.hoverColor = this._hoverColor;
+    this._highlighter.config.selectionColor = this._selectionColor;
     this._highlighter.setup({ world: this._world });
 
-    this._highlighter.events.select.onHighlight.add(() => {
-      this.clearSelection(this.POWERBI);
-      console.log(this._highlighter.selection);
+    this._highlighter.events.select.onHighlight.add(async (fragmentIdMap) => {
+      // no need to clear selection here, as it will be cleared each time before this event is called
+      await this.setPowerBiSelection(fragmentIdMap);
+    });
+
+    this._highlighter.events.select.onClear.add(async () => {
+      await this.clearPowerBiSelection();
     });
   }
 
-  highlight(selectionIds: string[]) {
-    const fragmentIdMap = this.fragmentManager.guidToFragmentIdMap(selectionIds);
-    if (!fragmentIdMap) return; // temp solution to workaround async loadModel not finished yet
-    this.clearSelection("select");
-    this.addSelection(this.POWERBI);
-    this._highlighter.highlightByID(this.POWERBI, fragmentIdMap);
-    console.log(this._highlighter.selection);
-  }
-
-  reset() {
-    this.clearSelection(this.POWERBI);
+  private setupHider() {
+    this._hider = this.components.get(OBC.Hider);
   }
 
   /**
+   * Highlights the selection in the viewer
+   * @param globalIds The global IDs of the objects to highlight
+   */
+  highlight(globalIds: string[]) {
+    const fragmentIdMap = this.fragmentManager.guidToFragmentIdMap(globalIds);
+    if (!fragmentIdMap) return; // temp solution to workaround async loadModel not finished yet
+    // this.addSelection("select");
+    // this._highlighter.highlightByID("select", fragmentIdMap);
+    this._hider.isolate(fragmentIdMap);
+  }
+
+  /**
+   * Resets the selection in the viewer
+   */
+  reset() {
+    // this.clearSelection("select");
+    this._hider.set(true);
+  }
+
+  /**
+   * Sets the selection in Power BI based on a fragmentIdMap. This will filter the dashboard based on the selected objects.
+   * @param fragmentIdMap The fragmentIdMap to set the selection from
+   */
+  async setPowerBiSelection(fragmentIdMap: FragmentIdMap) {
+    if (!fragmentIdMap) return;
+    const globalIds = this.fragmentManager.fragmentIdMapToGuids(fragmentIdMap);
+
+    if (globalIds) {
+      const filteredGlobalIds = globalIds.filter((id) => this.selectionIdMap.has(id));
+      const selectionIds = filteredGlobalIds.map((globalId) => this.selectionIdMap.get(globalId));
+      if (selectionIds.length > 0) {
+        await this._selectionManager.select(selectionIds);
+        console.log("selectionIds", selectionIds);
+      }
+    }
+  }
+
+  /**
+   * Clears the selection in Power BI. This will remove any filters applied to the dashboard.
+   */
+  async clearPowerBiSelection() {
+    await this._selectionManager.clear();
+  }
+
+  /**
+   * Clears the selection in the viewer. This will unhighlight any objects in that selection.
    * Workaround because clear() throws an error if arguemt does not exist... WHYYY???
+   * @param name The name of the selection to clear
    */
   private clearSelection(name: string) {
     if (this._highlighter.selection[name]) {
@@ -117,7 +151,10 @@ export class Viewer {
   }
 
   /**
+   * Adds a selection to the viewer.
+   * This will NOT highlight any objects.
    * Workaround because add() throws an error if arguemt already exists... WHYYY???
+   * @param name The name of the selection to add
    */
   private addSelection(name: string) {
     if (!this._highlighter.selection[name]) {
@@ -159,12 +196,4 @@ export class Viewer {
       console.log("Loading model finished");
     }
   }
-}
-
-/**
- * define data point
- */
-export interface DataPoint {
-  expressID: string | number;
-  selectionId: ISelectionId;
 }
