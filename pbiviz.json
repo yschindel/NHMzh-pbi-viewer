@@ -1,0 +1,21 @@
+{
+  "visual": {
+    "name": "ifcVisual",
+    "displayName": "ifcVisual",
+    "guid": "ifcVisual32ECD4985D6D4A3DAC69426E3D8A5149",
+    "visualClassName": "Visual",
+    "version": "1.0.0.0",
+    "description": "IFC Visual",
+    "supportUrl": "example.org",
+    "gitHubUrl": "https://github.com/"
+  },
+  "apiVersion": "5.3.0",
+  "author": { "name": "asdf", "email": "asdfsa" },
+  "assets": { "icon": "assets/icon.png" },
+  "externalJS": null,
+  "style": "style/visual.less",
+  "capabilities": "capabilities.json",
+  "dependencies": null,
+  "stringResources": [],
+  "version": "1.0.0.0"
+}

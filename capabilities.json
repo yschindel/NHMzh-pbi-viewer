@@ -1,0 +1,75 @@
+{
+  "dataRoles": [
+    {
+      "displayName": "Bim Model",
+      "name": "model",
+      "kind": "GroupingOrMeasure"
+    }
+  ],
+  "objects": {
+    "dataPoint": {
+      "properties": {
+        "defaultColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "showAllDataPoints": {
+          "type": {
+            "bool": true
+          }
+        },
+        "fill": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "fillRule": {
+          "type": {
+            "fill": {}
+          }
+        },
+        "fontSize": {
+          "type": {
+            "formatting": {
+              "fontSize": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "dataViewMappings": [
+    {
+      "table": {
+        "rows": {
+          "for": {
+            "in": "model"
+          },
+          "dataReductionAlgorithm": {
+            "window": {
+              "count": 100000
+            }
+          }
+        }
+      }
+    }
+  ],
+  "supportsMultiVisualSelection": true,
+  "supportsHighlight": true,
+  "privileges": [
+    {
+      "name": "WebAccess",
+      "essential": true,
+      "parameters": ["http://localhost:3000"]
+    }
+  ]
+}
