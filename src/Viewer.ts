@@ -28,8 +28,6 @@ export class Viewer {
 
   private _hider: OBC.Hider;
 
-  private POWERBI = "powerbi";
-
   /**
    * Constructor for the Viewer class. Sets up the viewer ready to load a model.
    * Does not load a model.
@@ -65,8 +63,8 @@ export class Viewer {
     this._world.scene.setup();
     this._world.scene.three.background = null;
 
-    const grids = this.components.get(OBC.Grids);
-    grids.create(this._world);
+    // const grids = this.components.get(OBC.Grids);
+    // grids.create(this._world);
   }
 
   /**
@@ -138,46 +136,6 @@ export class Viewer {
   async clearPowerBiSelection() {
     await this._selectionManager.clear();
   }
-
-  /**
-   * Clears the selection in the viewer. This will unhighlight any objects in that selection.
-   * Workaround because clear() throws an error if arguemt does not exist... WHYYY???
-   * @param name The name of the selection to clear
-   */
-  private clearSelection(name: string) {
-    if (this._highlighter.selection[name]) {
-      this._highlighter.clear(name);
-    }
-  }
-
-  /**
-   * Adds a selection to the viewer.
-   * This will NOT highlight any objects.
-   * Workaround because add() throws an error if arguemt already exists... WHYYY???
-   * @param name The name of the selection to add
-   */
-  private addSelection(name: string) {
-    if (!this._highlighter.selection[name]) {
-      this._highlighter.add(name, new THREE.Color("#00639c"));
-    }
-  }
-
-  // private fitToZoom() {
-  //     const { max, min } = this.boundingBox;
-  //     if ( !max || !min ) return;
-  //     // define vector from max to min
-  //     const dir = max.clone().sub( min.clone() ).normalize();
-  //     // distance max to min
-  //     const dis = max.distanceTo( min );
-  //     // center
-
-  //     const center = max.clone().add( dir.clone().multiplyScalar( -0.5 * dis ) );
-
-  //     // camera position
-  //     const pos = max.clone().add( dir.clone().multiplyScalar( 0.5 * dis ) );
-  //     // set true mean we can animate
-  //     ( this.components.camera as OBC.SimpleCamera ).controls.setLookAt( pos.x, pos.y, pos.z, center.x, center.y, center.z, true );
-  // }
 
   /**
    * Load the model from the server and add it to the scene

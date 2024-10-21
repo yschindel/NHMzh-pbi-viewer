@@ -33,7 +33,22 @@ export class Visual implements IVisual {
   }
 
   public update(options: VisualUpdateOptions) {
+    // @ts-ignore
+    console.log("Update type", powerbi.VisualUpdateType[options.type]);
+
+    switch (options.type) {
+      case powerbi.VisualUpdateType.Resize:
+      case powerbi.VisualUpdateType.ResizeEnd:
+      case powerbi.VisualUpdateType.Style:
+      case powerbi.VisualUpdateType.ViewMode:
+      case powerbi.VisualUpdateType.Resize + powerbi.VisualUpdateType.ResizeEnd:
+        return;
+      default:
+        break;
+    }
+
     // build inital selectionIdMap to allow user selection in the viewer
+
     const dataView = options.dataViews[0];
     const table = dataView.table;
     table.rows.forEach((row: DataViewTableRow, rowIndex: number) => {
@@ -42,7 +57,7 @@ export class Visual implements IVisual {
       this.viewer.selectionIdMap.set(id, selectionId);
     });
 
-    this.selectionManager.clear();
+    // this.selectionManager.clear();
 
     // make sure the viewer setup has finished it's async operation
     if (!this.viewer || !this.viewer.modelLoaded || !options.dataViews) return;
@@ -77,11 +92,11 @@ export class Visual implements IVisual {
    */
   private handleSelection(dataView: powerbi.DataView) {
     const isFiltered = dataView.metadata.isDataFilterApplied !== undefined;
-    if (!isFiltered) {
-      // handle the case where the dashboard is not filtered
-      this.viewer.reset();
-      return;
-    }
+    // if (!isFiltered) {
+    //   // handle the case where the dashboard is not filtered
+    //   this.viewer.reset();
+    //   return;
+    // }
     const selectionIds = dataView.table.rows.map((row: DataViewTableRow) => row[0] as string);
     this.viewer.highlight(selectionIds);
   }
