@@ -2,6 +2,8 @@
 
 PowerBI visual for viewing IFC models using @thatopen/components.
 
+> **Note:** This viewer is in development - it currently needs a local server to load the IFC models.
+
 ## Project setup
 
 This project is set up using the powerbi-visuals-webpack-plugin. It allows us to use strict ecmaScript modules like @thatopen/components.
