@@ -1,7 +1,7 @@
 {
   "name": "visual",
   "description": "default_template_value",
-  "version": "1.0.0.0",
+  "version": "1.0.1",
   "repository": {
     "type": "default_template_value",
     "url": "default_template_value"
@@ -11,6 +11,7 @@
     "pbiviz": "pbiviz",
     "package": "webpack",
     "build": "webpack",
+    "postbuild": "node scripts/renameBuiltVisual.js",
     "start": "webpack serve",
     "dev": "webpack serve",
     "lint": "npx eslint .",
