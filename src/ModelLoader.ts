@@ -21,7 +21,7 @@ export class ModelLoader {
       throw new Error("fileName is required");
     }
     this.fileName = fileName;
-    this.baseUrl = baseUrl || "http://localhost:3000";
+    this.baseUrl = baseUrl || "http://localhost:3000/files/getFirst";
     this.components = new OBC.Components();
     this.ifcLoader = this.components.get(OBC.IfcLoader);
   }
@@ -64,7 +64,7 @@ export class ModelLoader {
    * @returns The compressed file as an ArrayBuffer
    */
   async fetchFile(type: string = "frag"): Promise<ArrayBuffer> {
-    const res = await fetch(`${this.baseUrl}/download/${this.fileName}_${type}.gz`, {
+    const res = await fetch(`${this.baseUrl}?name=${this.fileName}`, {
       method: "GET",
       mode: "cors",
     });
