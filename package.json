@@ -23,6 +23,7 @@
     "@thatopen/fragments": "^2.3.0",
     "@types/d3": "7.4.3",
     "d3": "7.9.0",
+    "minio": "^8.0.1",
     "pako": "^2.1.0",
     "powerbi-visuals-api": "^5.11.0",
     "powerbi-visuals-utils-formattingmodel": "6.0.4",
