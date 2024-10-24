@@ -96,6 +96,13 @@ module.exports = {
     },
     fallback: {
       fakeDefine: false, // Add this line to provide a fallback
+      "stream": require.resolve("stream-browserify"),
+      "crypto": require.resolve("crypto-browserify"),
+      "https": require.resolve("https-browserify"),
+      "http": require.resolve("stream-http"),
+      "path": require.resolve("path-browserify"),
+      "vm": require.resolve("vm-browserify"),
+      "timers": require.resolve("timers-browserify"),
     },
   },
   output: {

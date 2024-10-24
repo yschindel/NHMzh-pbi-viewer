@@ -143,8 +143,8 @@ export class Viewer {
    * @param ifc If true, the model is an IFC file
    * @param baseUrl The base URL of the server
    */
-  async loadModel(fileName: string, baseUrl: string = "") {
-    const loader = new ModelLoader(fileName, baseUrl);
+  async loadModel(fileName: string) {
+    const loader = new ModelLoader(fileName);
 
     const file = await loader.loadFragments();
     if (file) {

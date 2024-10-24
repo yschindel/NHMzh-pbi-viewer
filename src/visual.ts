@@ -29,7 +29,7 @@ export class Visual implements IVisual {
     this.visualHost = options.host;
     this.selectionManager = this.visualHost.createSelectionManager();
     this.viewer = new Viewer(this.target, this.selectionManager);
-    this.viewer.loadModel("test");
+    this.viewer.loadModel("project1/file1_2024-10-23T13:52:27.830Z.gz");
   }
 
   public update(options: VisualUpdateOptions) {
