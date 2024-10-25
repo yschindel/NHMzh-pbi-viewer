@@ -21,7 +21,7 @@ export class ModelLoader {
       throw new Error("fileName is required");
     }
     this.fileName = fileName;
-    this.baseUrl = baseUrl || "http://localhost:3000/files/getFirst";
+    this.baseUrl = baseUrl || "http://localhost:3000/file";
     this.components = new OBC.Components();
     this.ifcLoader = this.components.get(OBC.IfcLoader);
   }
