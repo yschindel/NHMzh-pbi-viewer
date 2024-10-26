@@ -70,7 +70,8 @@ export class ModelLoader {
     });
     // check if the response is ok
     if (!res.ok) {
-      throw new Error(`Failed to fetch file: ${res.statusText}`);
+      const text = await res.text();
+      throw new Error(`Failed to fetch file: ${res.statusText}, ${text}`);
     }
     return await res.arrayBuffer();
   }
