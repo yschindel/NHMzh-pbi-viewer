@@ -49,21 +49,22 @@ export class Visual implements IVisual {
 				break;
 		}
 
-		// build inital selectionIdMap to allow user selection in the viewer
-
 		const dataView = options.dataViews[0];
+
 		if (!dataView) return;
 		if (dataView.table.columns[0].displayName != "id") {
 			console.log("Invalid id field");
 			this.target.innerHTML = "<p>Use id as the id field</p>";
 			return;
 		}
+
 		if (dataView.table.columns[1].displayName != "LatestFragmentsFile") {
 			console.log("Invalid File Path field");
 			this.target.innerHTML = "<p>Use LatestFragmentsFile as the file path field</p>";
 			return;
 		}
 
+		// load or reload the model
 		const filePath = dataView.table.rows[0][1] as string;
 		if (this.filePath !== filePath) {
 			if (!filePath) {
@@ -78,6 +79,7 @@ export class Visual implements IVisual {
 			this.filePath = filePath;
 		}
 
+		// build inital selectionIdMap to allow user selection in the viewer
 		const idsTable = dataView.table;
 		idsTable.rows.forEach((row: DataViewTableRow, rowIndex: number) => {
 			const id = row[0] as string;
