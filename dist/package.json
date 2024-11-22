@@ -1,14 +1,14 @@
 {
-		"version": "1.0.0.0",
+		"version": "1.0.0.1",
 		"author": {"name":"asdf","email":"asdfsa"},
 		"resources": [
 			{
 				"resourceId": "rId0",
 				"sourceType": 5,
-				"file": "resources/ifcVisual32ECD4985D6D4A3DAC69426E3D8A5149.pbiviz.json"
+				"file": "resources/NHMzhPbiViewer.pbiviz.json"
 			}
 		],
-		"visual": {"name":"ifcVisual","displayName":"ifcVisual","guid":"ifcVisual32ECD4985D6D4A3DAC69426E3D8A5149","visualClassName":"Visual","version":"1.0.0.0","description":"IFC Visual","supportUrl":"example.org","gitHubUrl":"https://github.com/"},
+		"visual": {"name":"NHMzhPbiViewer","displayName":"NHMzhPbiViewer","guid":"NHMzhPbiViewer","visualClassName":"Visual","version":"1.0.0.1","description":"NHMzhPbiViewer","supportUrl":"example.org","gitHubUrl":"https://github.com/"},
 		"metadata": {
 			"pbivizjson": {
 				"resourceId": "rId0"

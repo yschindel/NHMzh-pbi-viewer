@@ -41,6 +41,7 @@ https://localhost:8080/assets/
 
 ## Building the project
 
+Change the guid in `pbiviz.json` to a new version if you have changed capabilities.json.
 Run `npm run build` to build the project.
 
 ## debugging
