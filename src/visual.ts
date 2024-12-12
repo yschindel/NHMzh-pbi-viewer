@@ -23,7 +23,7 @@ export class Visual implements IVisual {
 	private formattingSettingsService: FormattingSettingsService;
 	private selectionManager: ISelectionManager;
 	private viewer: Viewer;
-	private filePath: string = "";
+	private fileId: string = "";
 
 	constructor(options: VisualConstructorOptions) {
 		console.log("constructor options", options);
@@ -58,31 +58,34 @@ export class Visual implements IVisual {
 			return;
 		}
 
-		if (dataView.table.columns[1].displayName != "LatestFragmentsFile") {
+		if (dataView.table.columns[1].displayName != "fileId") {
 			console.log("Invalid File Path field");
-			this.target.innerHTML = "<p>Use LatestFragmentsFile as the file path field</p>";
+			this.target.innerHTML = "<p>Use fileId as the file id field</p>";
 			return;
 		}
 
 		// load or reload the model
-		const filePath = dataView.table.rows[0][1] as string;
-		if (this.filePath !== filePath) {
-			if (!filePath) {
-				console.log("No file path found");
+		const fileId = dataView.table.rows[0][1] as string;
+		if (this.fileId !== fileId) {
+			if (!fileId) {
+				console.log("No file id found");
 				return;
 			}
 			this.target.innerHTML = "";
 			console.log("creating viewer");
 			this.viewer = new Viewer(this.target, this.selectionManager);
-			console.log("Loading model", filePath);
-			this.viewer.loadModel(filePath);
-			this.filePath = filePath;
+			console.log("Loading model", fileId);
+			this.viewer.loadModel(fileId);
+			this.fileId = fileId;
 		}
 
 		// build inital selectionIdMap to allow user selection in the viewer
+		const uniqueIds = new Set();
 		const idsTable = dataView.table;
 		idsTable.rows.forEach((row: DataViewTableRow, rowIndex: number) => {
 			const id = row[0] as string;
+			if (uniqueIds.has(id)) return;
+			uniqueIds.add(id);
 			const selectionId: ISelectionId = this.visualHost.createSelectionIdBuilder().withTable(idsTable, rowIndex).createSelectionId();
 			this.viewer.selectionIdMap.set(id, selectionId);
 		});
@@ -115,12 +118,6 @@ export class Visual implements IVisual {
 	 * @param dataView The data view to handle
 	 */
 	private handleSelection(dataView: powerbi.DataView) {
-		const isFiltered = dataView.metadata.isDataFilterApplied !== undefined;
-		// if (!isFiltered) {
-		//   // handle the case where the dashboard is not filtered
-		//   this.viewer.reset();
-		//   return;
-		// }
 		const selectionIds = dataView.table.rows.map((row: DataViewTableRow) => row[0] as string);
 		this.viewer.highlight(selectionIds);
 	}

@@ -2,9 +2,9 @@
 	"visual": {
 		"name": "NHMzhPbiViewer",
 		"displayName": "NHMzhPbiViewer",
-		"guid": "NHMzhPbiViewer",
+		"guid": "dfc3a757_249a_4241_ba34_f678f38032eb",
 		"visualClassName": "Visual",
-		"version": "1.0.0.1",
+		"version": "1.0.0.3",
 		"description": "NHMzhPbiViewer",
 		"supportUrl": "example.org",
 		"gitHubUrl": "https://github.com/"
@@ -17,5 +17,5 @@
 	"capabilities": "capabilities.json",
 	"dependencies": null,
 	"stringResources": [],
-	"version": "1.0.0.1"
+	"version": "1.0.0.3"
 }

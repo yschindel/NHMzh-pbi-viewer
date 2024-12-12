@@ -45,6 +45,7 @@ export class Viewer {
 	 * Sets up the scene and adds an empty world to the container
 	 */
 	private initScene() {
+		console.log("initScene");
 		this.container = document.createElement("div");
 		this.container.className = "full-screen";
 		this.container.style.zIndex = "2000";
@@ -68,6 +69,7 @@ export class Viewer {
 	 * Sets up the highlighter for the model to allow user selection
 	 */
 	private setupHighlighter() {
+		console.log("setupHighlighter");
 		if (!this._world) return;
 
 		this._highlighter = this.components.get(OBF.Highlighter);
@@ -94,7 +96,13 @@ export class Viewer {
 	 * @param globalIds The global IDs of the objects to highlight
 	 */
 	highlight(globalIds: string[]) {
+		console.log("highlight");
+		console.log("globalIds", globalIds.length);
 		const fragmentIdMap = this.fragmentManager.guidToFragmentIdMap(globalIds);
+
+		// Count the number of fragments (keys in the map)
+		const count = fragmentIdMap ? Object.keys(fragmentIdMap).length : 0;
+		console.log("count", count);
 		if (!fragmentIdMap) return; // temp solution to workaround async loadModel not finished yet
 		// this.addSelection("select");
 		// this._highlighter.highlightByID("select", fragmentIdMap);
@@ -114,6 +122,7 @@ export class Viewer {
 	 * @param fragmentIdMap The fragmentIdMap to set the selection from
 	 */
 	async setPowerBiSelection(fragmentIdMap: FragmentIdMap) {
+		console.log("setPowerBiSelection");
 		if (!fragmentIdMap) return;
 		const globalIds = this.fragmentManager.fragmentIdMapToGuids(fragmentIdMap);
 
@@ -131,6 +140,7 @@ export class Viewer {
 	 * Clears the selection in Power BI. This will remove any filters applied to the dashboard.
 	 */
 	async clearPowerBiSelection() {
+		console.log("clearPowerBiSelection");
 		await this._selectionManager.clear();
 	}
 
@@ -140,8 +150,8 @@ export class Viewer {
 	 * @param ifc If true, the model is an IFC file
 	 * @param baseUrl The base URL of the server
 	 */
-	async loadModel(fileName: string, baseUrl: string = "") {
-		const loader = new ModelLoader(fileName, baseUrl);
+	async loadModel(fileId: string, baseUrl: string = "") {
+		const loader = new ModelLoader(fileId, baseUrl);
 
 		const file = await loader.loadFragments();
 		if (file) {

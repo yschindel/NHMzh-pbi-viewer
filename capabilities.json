@@ -6,8 +6,8 @@
 			"kind": "GroupingOrMeasure"
 		},
 		{
-			"displayName": "File Path",
-			"name": "file_path",
+			"displayName": "File Id",
+			"name": "file_id",
 			"kind": "Measure",
 			"preferredTypes": [
 				{
@@ -62,17 +62,17 @@
 			"conditions": [
 				{
 					"guids": { "min": 1 },
-					"file_path": { "max": 1 }
+					"file_id": { "max": 1 }
 				}
 			],
 			"table": {
 				"rows": {
-					"select": [{ "for": { "in": "guids" } }, { "bind": { "to": "file_path" } }]
-				},
-				"dataReductionAlgorithm": {
-					"window": {
-						"count": 100000
-					}
+					"dataReductionAlgorithm": {
+						"top": {
+							"count": 30000
+						}
+					},
+					"select": [{ "for": { "in": "guids" } }, { "bind": { "to": "file_id" } }]
 				}
 			}
 		}

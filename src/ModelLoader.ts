@@ -5,7 +5,7 @@ import * as OBC from "@thatopen/components";
  * Class for loading compressed IFC fragments file from the server
  */
 export class ModelLoader {
-	fileName: string; // The name of the file to be loaded from the server
+	fileId: string; // The id of the file to be loaded from the server
 	baseUrl: string;
 	file: Uint8Array;
 	components: OBC.Components;
@@ -13,14 +13,14 @@ export class ModelLoader {
 
 	/**
 	 * Initialize the ModelLoader
-	 * @param fileName The name of the file to be loaded from the server
+	 * @param fileId The id of the file to be loaded from the server
 	 * @param baseUrl The base URL of the server. Default is "http://localhost:3000"
 	 */
-	constructor(fileName: string, baseUrl: string) {
-		if (!fileName) {
-			throw new Error("fileName is required");
+	constructor(fileId: string, baseUrl: string) {
+		if (!fileId) {
+			throw new Error("fileId is required");
 		}
-		this.fileName = fileName;
+		this.fileId = fileId;
 		this.baseUrl = baseUrl || "http://localhost:3000/fragments";
 		this.components = new OBC.Components();
 		this.ifcLoader = this.components.get(OBC.IfcLoader);
@@ -53,18 +53,17 @@ export class ModelLoader {
 	}
 
 	async loadIfc() {
-		const file = await this.fetchFile("ifc");
+		const file = await this.fetchFile();
 		const buffer = this.decompress(file);
 		return await this.parseIfc(buffer);
 	}
 
 	/**
 	 * Fetches the compressed IFC fragments file from the server
-	 * @param type The type of file to load. Default is "frag"
 	 * @returns The compressed file as an ArrayBuffer
 	 */
-	async fetchFile(type: string = "frag"): Promise<ArrayBuffer> {
-		const res = await fetch(`${this.baseUrl}?name=${this.fileName}`, {
+	async fetchFile(): Promise<ArrayBuffer> {
+		const res = await fetch(`${this.baseUrl}?id=${this.fileId}`, {
 			method: "GET",
 			mode: "cors",
 		});
