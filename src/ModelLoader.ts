@@ -21,7 +21,7 @@ export class ModelLoader {
 			throw new Error("fileId is required");
 		}
 		this.fileId = fileId;
-		this.baseUrl = baseUrl || "http://localhost:3000/fragments";
+		this.baseUrl = baseUrl || "https://pbi-server.fastbim5.eu/fragments";
 		this.components = new OBC.Components();
 		this.ifcLoader = this.components.get(OBC.IfcLoader);
 	}

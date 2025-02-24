@@ -83,7 +83,7 @@
 		{
 			"name": "WebAccess",
 			"essential": true,
-			"parameters": ["http://localhost:3000"]
+			"parameters": ["http://localhost:3000", "https://pbi-server.fastbim5.eu"]
 		}
 	]
 }

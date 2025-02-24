@@ -58,9 +58,9 @@ export class Visual implements IVisual {
 			return;
 		}
 
-		if (dataView.table.columns[1].displayName != "fileId") {
+		if (dataView.table.columns[1].displayName != "fileid") {
 			console.log("Invalid File Path field");
-			this.target.innerHTML = "<p>Use fileId as the file id field</p>";
+			this.target.innerHTML = "<p>Use fileid as the file id field</p>";
 			return;
 		}
 
