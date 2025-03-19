@@ -6,7 +6,8 @@ import * as OBC from "@thatopen/components";
  */
 export class ModelLoader {
 	fileId: string; // The id of the file to be loaded from the server
-	baseUrl: string;
+	apiKey: string;
+	serverUrl: string;
 	file: Uint8Array;
 	components: OBC.Components;
 	ifcLoader: OBC.IfcLoader;
@@ -14,14 +15,23 @@ export class ModelLoader {
 	/**
 	 * Initialize the ModelLoader
 	 * @param fileId The id of the file to be loaded from the server
-	 * @param baseUrl The base URL of the server. Default is "http://localhost:3000"
+	 * @param apiKey The API key to be used to authenticate the request
+	 * @param serverUrl The server URL including the endpoint to be used to load the file
 	 */
-	constructor(fileId: string, baseUrl: string) {
+	constructor(fileId: string, apiKey: string, serverUrl: string) {
 		if (!fileId) {
 			throw new Error("fileId is required");
 		}
+
+		if (!apiKey) {
+			throw new Error("apiKey is required");
+		}
+		if (!serverUrl) {
+			throw new Error("serverUrl is required");
+		}
 		this.fileId = fileId;
-		this.baseUrl = baseUrl || "https://pbi-server.fastbim5.eu/fragments";
+		this.apiKey = apiKey;
+		this.serverUrl = serverUrl;
 		this.components = new OBC.Components();
 		this.ifcLoader = this.components.get(OBC.IfcLoader);
 	}
@@ -63,9 +73,12 @@ export class ModelLoader {
 	 * @returns The compressed file as an ArrayBuffer
 	 */
 	async fetchFile(): Promise<ArrayBuffer> {
-		const res = await fetch(`${this.baseUrl}?id=${this.fileId}`, {
+		const res = await fetch(`${this.serverUrl}?id=${this.fileId}`, {
 			method: "GET",
 			mode: "cors",
+			headers: {
+				"X-API-Key": this.apiKey,
+			},
 		});
 		// check if the response is ok
 		if (!res.ok) {

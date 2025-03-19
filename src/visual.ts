@@ -24,13 +24,15 @@ export class Visual implements IVisual {
 	private selectionManager: ISelectionManager;
 	private viewer: Viewer;
 	private fileId: string = "";
+	private templateHtml: string = require("./templates/new.html").default;
 
 	constructor(options: VisualConstructorOptions) {
 		console.log("constructor options", options);
 		this.target = options.element;
 		this.visualHost = options.host;
 		this.selectionManager = this.visualHost.createSelectionManager();
-		this.target.innerHTML = "<p>User 'id' as the GUID field and 'LatestFragmentsFile' as the file path field</p>";
+		this.target.innerHTML = this.templateHtml;
+		console.log("templateHtml", this.templateHtml);
 	}
 
 	public update(options: VisualUpdateOptions) {
@@ -44,14 +46,21 @@ export class Visual implements IVisual {
 			case powerbi.VisualUpdateType.Style:
 			case powerbi.VisualUpdateType.ViewMode:
 			case powerbi.VisualUpdateType.Resize + powerbi.VisualUpdateType.ResizeEnd:
+				console.log("Ignoring update type", options.type);
 				return;
 			default:
+				console.log("Processing update type", options.type);
 				break;
 		}
 
+		console.log("Getting data view");
 		const dataView = options.dataViews[0];
+		console.log("dataView", dataView);
+		if (!dataView) {
+			console.log("No data view");
+			return;
+		}
 
-		if (!dataView) return;
 		if (dataView.table.columns[0].displayName != "id") {
 			console.log("Invalid id field");
 			this.target.innerHTML = "<p>Use id as the id field</p>";
@@ -63,9 +72,27 @@ export class Visual implements IVisual {
 			this.target.innerHTML = "<p>Use fileid as the file id field</p>";
 			return;
 		}
+		if (dataView.table.columns[2].displayName != "api_key") {
+			console.log("Invalid api_key field");
+			this.target.innerHTML = "<p>Use api_key as the api key field</p>";
+			return;
+		}
+
+		if (dataView.table.columns[3].displayName != "server_url") {
+			console.log("Invalid server_url field");
+			this.target.innerHTML = "<p>Use server_url as the server url field</p>";
+			return;
+		}
+
+		console.log("All fields are valid");
 
 		// load or reload the model
 		const fileId = dataView.table.rows[0][1] as string;
+		const apiKey = dataView.table.rows[0][2] as string;
+		const serverUrl = dataView.table.rows[0][3] as string;
+		console.log("fileId", fileId);
+		console.log("apiKey", apiKey);
+		console.log("serverUrl", serverUrl);
 		if (this.fileId !== fileId) {
 			if (!fileId) {
 				console.log("No file id found");
@@ -75,7 +102,7 @@ export class Visual implements IVisual {
 			console.log("creating viewer");
 			this.viewer = new Viewer(this.target, this.selectionManager);
 			console.log("Loading model", fileId);
-			this.viewer.loadModel(fileId);
+			this.viewer.loadModel(fileId, apiKey, serverUrl);
 			this.fileId = fileId;
 		}
 

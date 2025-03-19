@@ -97,12 +97,12 @@ export class Viewer {
 	 */
 	highlight(globalIds: string[]) {
 		console.log("highlight");
-		console.log("globalIds", globalIds.length);
+		console.log("incoming ids: ", globalIds.length);
 		const fragmentIdMap = this.fragmentManager.guidToFragmentIdMap(globalIds);
 
 		// Count the number of fragments (keys in the map)
 		const count = fragmentIdMap ? Object.keys(fragmentIdMap).length : 0;
-		console.log("count", count);
+		console.log("corresponding fragments found: ", count);
 		if (!fragmentIdMap) return; // temp solution to workaround async loadModel not finished yet
 		// this.addSelection("select");
 		// this._highlighter.highlightByID("select", fragmentIdMap);
@@ -148,10 +148,11 @@ export class Viewer {
 	 * Load the model from the server and add it to the scene
 	 * @param fileName The name of the file to be loaded from the server
 	 * @param ifc If true, the model is an IFC file
-	 * @param baseUrl The base URL of the server
+	 * @param apiKey The API key to be used to authenticate the request
+	 * @param serverUrl The server URL to be used to load the file
 	 */
-	async loadModel(fileId: string, baseUrl: string = "") {
-		const loader = new ModelLoader(fileId, baseUrl);
+	async loadModel(fileId: string, apiKey: string, serverUrl: string) {
+		const loader = new ModelLoader(fileId, apiKey, serverUrl);
 
 		const file = await loader.loadFragments();
 		if (file) {
