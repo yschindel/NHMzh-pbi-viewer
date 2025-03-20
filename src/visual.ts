@@ -146,6 +146,6 @@ export class Visual implements IVisual {
 	 */
 	private handleSelection(dataView: powerbi.DataView) {
 		const selectionIds = dataView.table.rows.map((row: DataViewTableRow) => row[0] as string);
-		this.viewer.highlight(selectionIds);
+		// this.viewer.highlight(selectionIds);
 	}
 }

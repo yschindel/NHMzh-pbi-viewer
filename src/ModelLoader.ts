@@ -73,6 +73,8 @@ export class ModelLoader {
 	 * @returns The compressed file as an ArrayBuffer
 	 */
 	async fetchFile(): Promise<ArrayBuffer> {
+		this.serverUrl = "http://localhost:3000/fragments";
+		this.fileId = "project1/file1";
 		const res = await fetch(`${this.serverUrl}?id=${this.fileId}`, {
 			method: "GET",
 			mode: "cors",
