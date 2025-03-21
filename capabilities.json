@@ -3,7 +3,7 @@
 		{
 			"displayName": "Ids",
 			"name": "ids",
-			"kind": "GroupingOrMeasure"
+			"kind": "Grouping"
 		},
 		{
 			"displayName": "File Id",
@@ -79,38 +79,37 @@
 	},
 	"dataViewMappings": [
 		{
-			"conditions": [
-				{
-					"ids": { "min": 1 },
-					"file_id": { "max": 1 },
-					"api_key": { "max": 1 },
-					"server_url": { "max": 1 }
-				}
-			],
-			"table": {
+			"matrix": {
 				"rows": {
-					"dataReductionAlgorithm": {
-						"top": {
-							"count": 30000
-						}
-					},
-					"select": [
-						{ "for": { "in": "ids" } },
-						{ "bind": { "to": "file_id" } },
-						{ "bind": { "to": "api_key" } },
-						{ "bind": { "to": "server_url" } }
-					]
+					"for": { "in": "ids" }
+				},
+				"values": {
+					"select": [{ "bind": { "to": "file_id" } }, { "bind": { "to": "api_key" } }, { "bind": { "to": "server_url" } }]
 				}
 			}
 		}
 	],
-	"supportsMultiVisualSelection": true,
+	"supportsEmptyDataView": true,
 	"supportsHighlight": true,
+	"supportsKeyboardFocus": true,
+	"supportsLandingPage": true,
+	"keepAllMetadataColumns": true,
+	"supportsMultiVisualSelection": true,
+	"supportsSynchronizingFilterState": true,
+	"suppressDefaultTitle": true,
+	"tooltips": {
+		"supportEnhancedTooltips": true
+	},
 	"privileges": [
 		{
 			"name": "WebAccess",
 			"essential": true,
 			"parameters": ["http://localhost:3000", "https://pbi-server.fastbim5.eu"]
 		}
-	]
+	],
+	"migration": {
+		"filter": {
+			"shouldUseIdentityFilter": true
+		}
+	}
 }

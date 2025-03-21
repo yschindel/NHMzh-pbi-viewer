@@ -1,10 +1,12 @@
 import powerbi from "powerbi-visuals-api";
 import * as OBC from "@thatopen/components";
+import * as OBF from "@thatopen/components-front";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import ISelectionManager = powerbi.extensibility.ISelectionManager;
 import ISelectionId = powerbi.visuals.ISelectionId;
 import { ModelLoader } from "./ModelLoader";
+import { FragmentIdMap } from "@thatopen/fragments";
 
 /**
  * The Viewer class is responsible for rendering the 3D model in the Power BI visual.
@@ -13,6 +15,9 @@ export class Viewer {
 	components = new OBC.Components();
 	container: HTMLDivElement;
 	fragmentManager = this.components.get(OBC.FragmentsManager);
+	// allFragmentsIdMap: FragmentIdMap;
+	highlighter = this.components.get(OBF.Highlighter);
+	hider = this.components.get(OBC.Hider);
 	fileName: string; // The name of the file to be loaded from the server
 	modelLoaded: boolean = false;
 	selectionIdMap: Map<string, ISelectionId> = new Map(); // map of GUID to selectionId
@@ -51,6 +56,7 @@ export class Viewer {
 		this._target.appendChild(this.container);
 
 		this.scene = new THREE.Scene();
+		// this.setupHighlighter();
 
 		// Get container dimensions instead of window dimensions
 		const width = this.container.clientWidth;
@@ -103,84 +109,79 @@ export class Viewer {
 		this.renderer.render(this.scene, this.camera);
 	}
 
-	// /**
-	//  * Sets up the highlighter for the model to allow user selection
-	//  */
-	// private setupHighlighter() {
-	// 	console.log("setupHighlighter");
-	// 	if (!this._world) return;
+	/**
+	 * Sets up the highlighter for the model to allow user selection
+	 */
+	private setupHighlighter() {
+		console.log("setupHighlighter");
+		if (!this.scene) return;
 
-	// 	this._highlighter = this.components.get(OBF.Highlighter);
-	// 	this._highlighter.config.hoverColor = this._hoverColor;
-	// 	this._highlighter.config.selectionColor = this._selectionColor;
-	// 	this._highlighter.setup({ world: this._world });
+		this.highlighter.config.hoverColor = this._hoverColor;
+		this.highlighter.config.selectionColor = this._selectionColor;
+		this.highlighter.setup({ world: this.scene });
 
-	// 	this._highlighter.events.select.onHighlight.add(async (fragmentIdMap) => {
-	// 		// no need to clear selection here, as it will be cleared each time before this event is called
-	// 		await this.setPowerBiSelection(fragmentIdMap);
-	// 	});
+		this.highlighter.events.select.onHighlight.add(async (fragmentIdMap) => {
+			// no need to clear selection here, as it will be cleared each time before this event is called
+			await this.setPowerBiSelection(fragmentIdMap);
+		});
 
-	// 	this._highlighter.events.select.onClear.add(async () => {
-	// 		await this.clearPowerBiSelection();
-	// 	});
-	// }
+		this.highlighter.events.select.onClear.add(async () => {
+			await this.clearPowerBiSelection();
+		});
+	}
 
-	// private setupHider() {
-	// 	this._hider = this.components.get(OBC.Hider);
-	// }
+	/**
+	 * Highlights the selection in the viewer
+	 * @param globalIds The global IDs of the objects to highlight
+	 */
+	highlight(globalIds: string[]) {
+		console.log("highlight");
+		console.log("incoming ids: ", globalIds.length);
+		const fragmentIdMap = this.fragmentManager.guidToFragmentIdMap(globalIds);
 
-	// /**
-	//  * Highlights the selection in the viewer
-	//  * @param globalIds The global IDs of the objects to highlight
-	//  */
-	// highlight(globalIds: string[]) {
-	// 	console.log("highlight");
-	// 	console.log("incoming ids: ", globalIds.length);
-	// 	const fragmentIdMap = this.fragmentManager.guidToFragmentIdMap(globalIds);
+		// Count the number of fragments (keys in the map)
+		const count = fragmentIdMap ? Object.keys(fragmentIdMap).length : 0;
+		console.log("corresponding fragments found: ", count);
+		if (!fragmentIdMap) return; // temp solution to workaround async loadModel not finished yet
+		// this.addSelection("select");
+		// this._highlighter.highlightByID("select", fragmentIdMap);
+		this.hider.isolate(fragmentIdMap);
+	}
 
-	// 	// Count the number of fragments (keys in the map)
-	// 	const count = fragmentIdMap ? Object.keys(fragmentIdMap).length : 0;
-	// 	console.log("corresponding fragments found: ", count);
-	// 	if (!fragmentIdMap) return; // temp solution to workaround async loadModel not finished yet
-	// 	// this.addSelection("select");
-	// 	// this._highlighter.highlightByID("select", fragmentIdMap);
-	// 	this._hider.isolate(fragmentIdMap);
-	// }
+	/**
+	 * Resets the selection in the viewer
+	 */
+	reset() {
+		// this.clearSelection("select");
+		this.hider.set(true);
+	}
 
-	// /**
-	//  * Resets the selection in the viewer
-	//  */
-	// reset() {
-	// 	// this.clearSelection("select");
-	// 	this._hider.set(true);
-	// }
+	/**
+	 * Sets the selection in Power BI based on a fragmentIdMap. This will filter the dashboard based on the selected objects.
+	 * @param fragmentIdMap The fragmentIdMap to set the selection from
+	 */
+	async setPowerBiSelection(fragmentIdMap: FragmentIdMap) {
+		console.log("setPowerBiSelection");
+		if (!fragmentIdMap) return;
+		const globalIds = this.fragmentManager.fragmentIdMapToGuids(fragmentIdMap);
 
-	// /**
-	//  * Sets the selection in Power BI based on a fragmentIdMap. This will filter the dashboard based on the selected objects.
-	//  * @param fragmentIdMap The fragmentIdMap to set the selection from
-	//  */
-	// async setPowerBiSelection(fragmentIdMap: FragmentIdMap) {
-	// 	console.log("setPowerBiSelection");
-	// 	if (!fragmentIdMap) return;
-	// 	const globalIds = this.fragmentManager.fragmentIdMapToGuids(fragmentIdMap);
+		if (globalIds) {
+			const filteredGlobalIds = globalIds.filter((id) => this.selectionIdMap.has(id));
+			const selectionIds = filteredGlobalIds.map((globalId) => this.selectionIdMap.get(globalId));
+			if (selectionIds.length > 0) {
+				await this._selectionManager.select(selectionIds);
+				console.log("selectionIds", selectionIds);
+			}
+		}
+	}
 
-	// 	if (globalIds) {
-	// 		const filteredGlobalIds = globalIds.filter((id) => this.selectionIdMap.has(id));
-	// 		const selectionIds = filteredGlobalIds.map((globalId) => this.selectionIdMap.get(globalId));
-	// 		if (selectionIds.length > 0) {
-	// 			await this._selectionManager.select(selectionIds);
-	// 			console.log("selectionIds", selectionIds);
-	// 		}
-	// 	}
-	// }
-
-	// /**
-	//  * Clears the selection in Power BI. This will remove any filters applied to the dashboard.
-	//  */
-	// async clearPowerBiSelection() {
-	// 	console.log("clearPowerBiSelection");
-	// 	await this._selectionManager.clear();
-	// }
+	/**
+	 * Clears the selection in Power BI. This will remove any filters applied to the dashboard.
+	 */
+	async clearPowerBiSelection() {
+		console.log("clearPowerBiSelection");
+		await this._selectionManager.clear();
+	}
 
 	/**
 	 * Load the model from the server and add it to the scene
