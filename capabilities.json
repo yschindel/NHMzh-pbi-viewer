@@ -79,12 +79,27 @@
 	},
 	"dataViewMappings": [
 		{
-			"matrix": {
+			"conditions": [
+				{
+					"ids": { "min": 1 },
+					"file_id": { "max": 1 },
+					"api_key": { "max": 1 },
+					"server_url": { "max": 1 }
+				}
+			],
+			"table": {
 				"rows": {
-					"for": { "in": "ids" }
-				},
-				"values": {
-					"select": [{ "bind": { "to": "file_id" } }, { "bind": { "to": "api_key" } }, { "bind": { "to": "server_url" } }]
+					"dataReductionAlgorithm": {
+						"top": {
+							"count": 30000
+						}
+					},
+					"select": [
+						{ "for": { "in": "ids" } },
+						{ "bind": { "to": "file_id" } },
+						{ "bind": { "to": "api_key" } },
+						{ "bind": { "to": "server_url" } }
+					]
 				}
 			}
 		}
