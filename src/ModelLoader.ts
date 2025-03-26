@@ -62,12 +62,6 @@ export class ModelLoader {
 		return null; // This line is technically unreachable, but TypeScript might expect it
 	}
 
-	async loadIfc() {
-		const file = await this.fetchFile();
-		const buffer = this.decompress(file);
-		return await this.parseIfc(buffer);
-	}
-
 	/**
 	 * Fetches the compressed IFC fragments file from the server
 	 * @returns The compressed file as an ArrayBuffer

@@ -24,108 +24,97 @@ export class Visual implements IVisual {
 	private selectionManager: ISelectionManager;
 	private viewer: Viewer;
 	private fileId: string = "";
-	private templateHtml: string = require("./templates/new.html").default;
+	private configurationHtml: string = require("./templates/configuration.html").default;
+	private messageOverlay: HTMLDivElement;
 
 	constructor(options: VisualConstructorOptions) {
 		console.log("constructor options", options);
 		this.target = options.element;
 		this.visualHost = options.host;
 		this.selectionManager = this.visualHost.createSelectionManager();
-		this.target.innerHTML = this.templateHtml;
-		console.log("templateHtml", this.templateHtml);
+		this.createMessageOverlay();
+		this.showMessage(this.configurationHtml);
 	}
 
-	public update(options: VisualUpdateOptions) {
-		// @ts-ignore
-		console.log("Update type", powerbi.VisualUpdateType[options.type]);
-		console.log("options", options);
+	private createMessageOverlay() {
+		this.messageOverlay = document.createElement("div");
+		this.messageOverlay.style.position = "absolute";
+		this.messageOverlay.style.width = "90%";
+		this.messageOverlay.style.top = "50%";
+		this.messageOverlay.style.left = "50%";
+		this.messageOverlay.style.transform = "translate(-50%, -50%)";
+		this.messageOverlay.style.backgroundColor = "rgba(255, 255, 255, 0.7)";
+		this.messageOverlay.style.color = "black";
+		this.messageOverlay.style.padding = "20px";
+		this.messageOverlay.style.borderRadius = "8px";
+		this.messageOverlay.style.zIndex = "2002";
+		this.messageOverlay.style.display = "none";
+		this.messageOverlay.style.textAlign = "center";
 
+		this.target.appendChild(this.messageOverlay);
+	}
+
+	public showMessage(htmlContent: string) {
+		this.messageOverlay.innerHTML = htmlContent;
+		this.messageOverlay.style.display = "block";
+	}
+
+	public hideMessage() {
+		this.messageOverlay.style.display = "none";
+	}
+
+	async update(options: VisualUpdateOptions) {
 		switch (options.type) {
 			case powerbi.VisualUpdateType.Resize:
 			case powerbi.VisualUpdateType.ResizeEnd:
 			case powerbi.VisualUpdateType.Style:
 			case powerbi.VisualUpdateType.ViewMode:
 			case powerbi.VisualUpdateType.Resize + powerbi.VisualUpdateType.ResizeEnd:
-				console.log("Ignoring update type", options.type);
+				// @ts-ignore
+				console.log("Ignoring update type", powerbi.VisualUpdateType[options.type]);
 				return;
 			default:
-				console.log("Processing update type", options.type);
+				// @ts-ignore
+				console.log("Processing update type", powerbi.VisualUpdateType[options.type]);
 				break;
 		}
+		console.log("options", options);
 
-		console.log("Getting data view");
 		const dataView = options.dataViews[0];
-		console.log("dataView", dataView);
-		if (!dataView) {
-			console.log("No data view");
-			return;
-		}
 
-		if (dataView.table.columns[0].displayName != "id") {
-			console.log("Invalid id field");
-			this.target.innerHTML = "<p>Use id as the id field</p>";
-			return;
-		}
+		if (!this.ensureConfig(dataView)) return;
 
-		if (dataView.table.columns[1].displayName != "fileid") {
-			console.log("Invalid File Path field");
-			this.target.innerHTML = "<p>Use fileid as the file id field</p>";
-			return;
-		}
-		if (dataView.table.columns[2].displayName != "api_key") {
-			console.log("Invalid api_key field");
-			this.target.innerHTML = "<p>Use api_key as the api key field</p>";
-			return;
-		}
-
-		if (dataView.table.columns[3].displayName != "server_url") {
-			console.log("Invalid server_url field");
-			this.target.innerHTML = "<p>Use server_url as the server url field</p>";
-			return;
-		}
-
-		console.log("All fields are valid");
-
-		// load or reload the model
-		const fileId = dataView.table.rows[0][1] as string;
-		const apiKey = dataView.table.rows[0][2] as string;
-		const serverUrl = dataView.table.rows[0][3] as string;
-		console.log("fileId", fileId);
-		console.log("apiKey", apiKey);
-		console.log("serverUrl", serverUrl);
+		// Show loading message while loading model
+		const fileId = dataView.table.rows[0][this.getColumnIndex(dataView, "fileid")] as string;
+		const apiKey = dataView.table.rows[0][this.getColumnIndex(dataView, "api_key")] as string;
+		const serverUrl = dataView.table.rows[0][this.getColumnIndex(dataView, "server_url")] as string;
 		if (this.fileId !== fileId) {
-			if (!fileId) {
-				console.log("No file id found");
-				return;
-			}
-			this.target.innerHTML = "";
+			this.showMessage("Loading model...");
 			console.log("creating viewer");
 			this.viewer = new Viewer(this.target, this.selectionManager);
 			console.log("Loading model", fileId);
-			this.viewer.loadModel(fileId, apiKey, serverUrl);
+			await this.viewer.loadModel(fileId, apiKey, serverUrl);
 			this.fileId = fileId;
+			this.hideMessage();
 		}
 
 		// build inital selectionIdMap to allow user selection in the viewer
 		const uniqueIds = new Set();
 		const idsTable = dataView.table;
 		idsTable.rows.forEach((row: DataViewTableRow, rowIndex: number) => {
-			const id = row[0] as string;
+			const id = row[this.getColumnIndex(dataView, "id")] as string;
 			if (uniqueIds.has(id)) return;
 			uniqueIds.add(id);
 			const selectionId: ISelectionId = this.visualHost.createSelectionIdBuilder().withTable(idsTable, rowIndex).createSelectionId();
 			this.viewer.selectionIdMap.set(id, selectionId);
 		});
 
-		// this.selectionManager.clear();
-
 		// make sure the viewer setup has finished it's async operation
 		if (!this.viewer || !this.viewer.modelLoaded || !options.dataViews) return;
 
-		// const dataView = options.dataViews[0];
 		if (!dataView || !dataView.table || !dataView.table.rows || !dataView.table.columns) {
 			console.log("Invalid data");
-			this.target.innerHTML = "<p>Error</p>";
+			this.showMessage("Error loading model");
 			return;
 		}
 
@@ -145,7 +134,60 @@ export class Visual implements IVisual {
 	 * @param dataView The data view to handle
 	 */
 	private handleSelection(dataView: powerbi.DataView) {
-		const selectionIds = dataView.table.rows.map((row: DataViewTableRow) => row[0] as string);
+		const idColumnIndex = this.getColumnIndex(dataView, "id");
+		if (idColumnIndex === -1) return;
+
+		const selectionIds = dataView.table.rows.map((row: DataViewTableRow) => row[idColumnIndex] as string);
 		this.viewer.highlight(selectionIds);
+	}
+
+	private ensureConfig(dataView: powerbi.DataView) {
+		console.log("dataView", dataView);
+		if (!dataView) {
+			console.log("No data view");
+			return false;
+		}
+
+		if (!dataView.table || !dataView.table.columns) {
+			console.log("No table or columns");
+			this.showMessage(this.configurationHtml);
+			return false;
+		}
+
+		const idColumnIndex = this.getColumnIndex(dataView, "id");
+		if (idColumnIndex === -1) {
+			console.log("Invalid id field");
+			this.showMessage("Drag <b>id</b> from the 'Data_Latest' table into the <b>Ids</b> field");
+			return false;
+		}
+
+		const fileIdColumnIndex = this.getColumnIndex(dataView, "fileid");
+		if (fileIdColumnIndex === -1) {
+			console.log("Invalid File Path field");
+			this.showMessage("Drag <b>fileid</b> measure from the 'Measure Table' into the <b>File Id</b> field");
+			return false;
+		}
+
+		const apiKeyColumnIndex = this.getColumnIndex(dataView, "api_key");
+		if (apiKeyColumnIndex === -1) {
+			console.log("Invalid api_key field");
+			this.showMessage("Drag <b>api_key</b> measure from the 'Measure Table' into the <b>API Key</b> field");
+			return false;
+		}
+
+		const serverUrlColumnIndex = this.getColumnIndex(dataView, "server_url");
+		if (serverUrlColumnIndex === -1) {
+			console.log("Invalid server_url field");
+			this.showMessage("Drag <b>server_url</b> measure from the 'Measure Table' into the <b>Server URL</b> field");
+			return false;
+		}
+
+		this.hideMessage();
+		return true;
+	}
+
+	private getColumnIndex(dataView: powerbi.DataView, columnName: string) {
+		const column = dataView.table.columns.find((col) => col.displayName === columnName);
+		return column ? column.index : -1;
 	}
 }

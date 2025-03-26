@@ -16,8 +16,6 @@ export class Viewer {
 	container: HTMLDivElement;
 	fragmentManager = this.components.get(OBC.FragmentsManager);
 	// allFragmentsIdMap: FragmentIdMap;
-	highlighter = this.components.get(OBF.Highlighter);
-	hider = this.components.get(OBC.Hider);
 	fileName: string; // The name of the file to be loaded from the server
 	modelLoaded: boolean = false;
 	selectionIdMap: Map<string, ISelectionId> = new Map(); // map of GUID to selectionId
@@ -26,11 +24,14 @@ export class Viewer {
 	renderer: THREE.WebGLRenderer;
 	controls: OrbitControls;
 
-	private _target: HTMLElement;
-	private _selectionManager: ISelectionManager;
+	private world: OBC.SimpleWorld<OBC.SimpleScene, OBC.SimpleCamera, OBC.SimpleRenderer>;
+	private target: HTMLElement;
+	private selectionManager: ISelectionManager;
 
-	private _selectionColor: THREE.Color = new THREE.Color("#00639c");
-	private _hoverColor: THREE.Color = new THREE.Color("#328da8");
+	private selectionColor: THREE.Color = new THREE.Color("#00639c");
+	private hoverColor: THREE.Color = new THREE.Color("#328da8");
+	private highlighter = this.components.get(OBF.Highlighter);
+	private hider = this.components.get(OBC.Hider);
 
 	/**
 	 * Constructor for the Viewer class. Sets up the viewer ready to load a model.
@@ -38,75 +39,112 @@ export class Viewer {
 	 * @param target The target element to render the viewer in
 	 */
 	constructor(target: HTMLElement, selectionManager: ISelectionManager) {
-		this._target = target;
-		this._selectionManager = selectionManager;
+		this.target = target;
+		this.selectionManager = selectionManager;
 		this.initScene();
-		// this.setupHighlighter();
-		// this.setupHider();
 	}
 
 	/**
 	 * Sets up the scene and adds an empty world to the container
+	 * We have to setup using OBC to be able to use the hider and highlighter
+	 * But we override the camere, renderer and scene to make it easier to manage
+	 * OBC exposes the threejs object by setting the 'three' property
 	 */
 	private initScene() {
 		console.log("initScene");
 		this.container = document.createElement("div");
 		this.container.className = "full-screen";
 		this.container.style.zIndex = "2000";
-		this._target.appendChild(this.container);
+		this.target.appendChild(this.container);
 
-		this.scene = new THREE.Scene();
-		// this.setupHighlighter();
+		const worlds = this.components.get(OBC.Worlds);
+		this.world = worlds.create<OBC.SimpleScene, OBC.SimpleCamera, OBC.SimpleRenderer>();
+		this.world.scene = new OBC.SimpleScene(this.components);
+		this.world.renderer = new OBC.SimpleRenderer(this.components, this.container, {
+			powerPreference: "high-performance",
+			antialias: false,
+			alpha: false,
+		});
+		this.world.camera = new OBC.SimpleCamera(this.components);
 
-		// Get container dimensions instead of window dimensions
-		const width = this.container.clientWidth;
-		const height = this.container.clientHeight;
-		this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-		this.camera.position.set(0, 0, 10);
-		this.scene.add(this.camera);
-		// transparent background
-		this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-		this.renderer.setPixelRatio(window.devicePixelRatio);
-		this.renderer.setSize(width, height);
-		this.container.appendChild(this.renderer.domElement);
+		this.components.init();
 
-		// Add basic lighting
-		const ambientLight = new THREE.AmbientLight(0xffffff, 1);
-		this.scene.add(ambientLight);
+		this.world.camera.controls.setLookAt(12, 6, 8, 0, 0, -10);
+		this.world.scene.setup();
+		this.world.scene.three.background = new THREE.Color("#ffffff");
 
-		const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-		directionalLight.position.set(0, 1, 0);
-		this.scene.add(directionalLight);
+		const controls = this.world.camera.controls;
+		// disable the controls from that open company
+		controls.enabled = false;
+		// Get the underlying THREE.js elements
+		const camera = this.world.camera.three;
+		const renderer = this.world.renderer.three;
 
-		// Add OrbitControls
-		this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-		this.controls.enableDamping = false; // adds smooth inertia effect
+		// Create our own OrbitControls instance
+		this.controls = new OrbitControls(camera, renderer.domElement);
+		this.controls.enableDamping = false;
 		this.controls.minDistance = 1;
 		this.controls.maxDistance = 500;
 
-		// Add window resize handler
-		window.addEventListener("resize", this.onWindowResize.bind(this));
+		// Performance optimizations for renderer
+		renderer.setPixelRatio(window.devicePixelRatio || 1);
+		renderer.setSize(this.container.clientWidth, this.container.clientHeight);
 
-		this.animate();
+		// Only render when needed
+		let needsUpdate = true;
+		this.controls.addEventListener("change", () => {
+			needsUpdate = true;
+		});
+
+		// Optimized animation loop
+		const animate = () => {
+			requestAnimationFrame(animate);
+
+			// Only update and render if something changed
+			// This prevents the renderer from rendering still images
+			if (needsUpdate) {
+				this.controls.update();
+				renderer.render(this.world.scene.three, camera);
+				needsUpdate = false;
+			}
+		};
+		animate();
+
+		this.setupHighlighter();
 	}
 
-	private onWindowResize() {
-		const width = this.container.clientWidth;
-		const height = this.container.clientHeight;
+	private createResetButton() {
+		// check if the button already exists
+		const existingButton = document.querySelector(".reset-button");
+		if (existingButton) return;
 
-		this.camera.aspect = width / height;
-		this.camera.updateProjectionMatrix();
+		const resetButton = document.createElement("button");
+		resetButton.innerHTML = "Reset View";
+		resetButton.style.position = "absolute";
+		resetButton.style.top = "10px";
+		resetButton.style.left = "10px";
+		resetButton.style.zIndex = "2001";
+		resetButton.style.padding = "5px 10px";
+		resetButton.style.backgroundColor = "#ffffff";
+		resetButton.style.border = "1px solid #cccccc";
+		resetButton.style.borderRadius = "6px";
+		resetButton.style.cursor = "pointer";
+		resetButton.style.fontSize = "10px";
 
-		this.renderer.setSize(width, height);
-	}
+		// Add hover effect
+		resetButton.addEventListener("mouseover", () => {
+			resetButton.style.backgroundColor = "#f0f0f0";
+		});
+		resetButton.addEventListener("mouseout", () => {
+			resetButton.style.backgroundColor = "#ffffff";
+		});
 
-	private animate() {
-		requestAnimationFrame(this.animate.bind(this));
+		// Add click handler
+		resetButton.addEventListener("click", () => {
+			this.reset();
+		});
 
-		// Update controls in animation loop
-		this.controls.update();
-
-		this.renderer.render(this.scene, this.camera);
+		this.container.appendChild(resetButton);
 	}
 
 	/**
@@ -114,11 +152,11 @@ export class Viewer {
 	 */
 	private setupHighlighter() {
 		console.log("setupHighlighter");
-		if (!this.scene) return;
+		if (!this.world) return;
 
-		this.highlighter.config.hoverColor = this._hoverColor;
-		this.highlighter.config.selectionColor = this._selectionColor;
-		this.highlighter.setup({ world: this.scene });
+		this.highlighter.config.hoverColor = this.hoverColor;
+		this.highlighter.config.selectionColor = this.selectionColor;
+		this.highlighter.setup({ world: this.world });
 
 		this.highlighter.events.select.onHighlight.add(async (fragmentIdMap) => {
 			// no need to clear selection here, as it will be cleared each time before this event is called
@@ -169,8 +207,8 @@ export class Viewer {
 			const filteredGlobalIds = globalIds.filter((id) => this.selectionIdMap.has(id));
 			const selectionIds = filteredGlobalIds.map((globalId) => this.selectionIdMap.get(globalId));
 			if (selectionIds.length > 0) {
-				await this._selectionManager.select(selectionIds);
-				console.log("selectionIds", selectionIds);
+				await this.selectionManager.select(selectionIds);
+				// console.log("selectionIds", selectionIds);
 			}
 		}
 	}
@@ -180,7 +218,7 @@ export class Viewer {
 	 */
 	async clearPowerBiSelection() {
 		console.log("clearPowerBiSelection");
-		await this._selectionManager.clear();
+		await this.selectionManager.clear();
 	}
 
 	/**
@@ -196,10 +234,10 @@ export class Viewer {
 		const file = await loader.loadFragments();
 		if (file) {
 			const fragmentsGroup = this.fragmentManager.load(file);
-			this.scene.add(fragmentsGroup);
-			console.log(this.scene);
+			this.world.scene.three.add(fragmentsGroup);
 			this.modelLoaded = true;
 			console.log("Loading model finished");
+			this.createResetButton();
 		}
 	}
 }
