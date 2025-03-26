@@ -26,14 +26,23 @@ jobs:
       - name: Build PowerBI visual
         run: npm run build
 
+      - name: Rename output file
+        run: |
+          cd dist
+          for f in *.pbiviz; do
+            version=$(echo $f | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+')
+            mv "$f" "NHMzhPbiViewer_v${version}.pbiviz"
+          done
+
       - name: Create Release
         id: create_release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            dist/*.pbiviz
+            dist/NHMzhPbiViewer_v*.pbiviz
           draft: false
           prerelease: false
           generate_release_notes: true
+          tag_name: v${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
