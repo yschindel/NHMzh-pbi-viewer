@@ -6,6 +6,10 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
@@ -26,7 +30,23 @@ jobs:
       - name: Build PowerBI visual
         run: npm run build
 
+      - name: Get version from pbiviz.json
+        id: get_version
+        run: |
+          VERSION=$(node -p "require('./pbiviz.json').visual.version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if release exists
+        id: check_release
+        run: |
+          if gh release view "v${{ steps.get_version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Rename output file
+        if: steps.check_release.outputs.exists == 'false'
         run: |
           cd dist
           for f in *.pbiviz; do
@@ -35,6 +55,7 @@ jobs:
           done
 
       - name: Create Release
+        if: steps.check_release.outputs.exists == 'false'
         id: create_release
         uses: softprops/action-gh-release@v1
         with:
@@ -43,6 +64,6 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
-          tag_name: v${{ github.ref_name }}
+          tag_name: v${{ steps.get_version.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
