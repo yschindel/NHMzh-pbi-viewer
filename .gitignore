@@ -4,3 +4,4 @@
 *.tmp
 webpack.statistics.html
 *.pbiviz
+*.DS_Store

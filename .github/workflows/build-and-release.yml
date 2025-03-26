@@ -1,0 +1,48 @@
+name: Build and Release PowerBI Visual
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build PowerBI visual
+        run: npm run build
+
+      - name: Rename output file
+        run: |
+          cd dist
+          for f in *.pbiviz; do
+            version=$(echo $f | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+')
+            mv "$f" "NHMzhPbiViewer_v${version}.pbiviz"
+          done
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/NHMzhPbiViewer_v*.pbiviz
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          tag_name: v${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
