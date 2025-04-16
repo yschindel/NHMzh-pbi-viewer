@@ -100,6 +100,8 @@ export class Visual implements IVisual {
 				console.log("Loading model", fileId);
 				if (this.viewer.modelLoaded) {
 					await this.viewer.unloadModel();
+					this.target.removeChild(this.viewer.container);
+					this.viewer = new Viewer(this.target, this.selectionManager);
 				}
 				await this.viewer.loadModel(fileId, apiKey, serverUrl);
 				this.fileId = fileId;
@@ -127,7 +129,7 @@ export class Visual implements IVisual {
 				return;
 			}
 
-			// this.handleSelectionFromPBI(dataView);
+			this.handleSelectionFromPBI(dataView);
 		} catch (error) {
 			console.error("Error updating visual", error);
 		}

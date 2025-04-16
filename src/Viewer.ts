@@ -42,7 +42,8 @@ export class Viewer {
 		console.log("Viewer constructor");
 		this.components = new OBC.Components();
 		this.fragmentManager = this.components.get(OBC.FragmentsManager);
-		this.highlighter = this.components.get(OBF.Highlighter);
+
+		// this.highlighter = this.components.get(OBF.Highlighter);
 		this.hider = this.components.get(OBC.Hider);
 		this.target = target;
 		this.selectionManager = selectionManager;
@@ -163,16 +164,29 @@ export class Viewer {
 		console.log("setupHighlighter");
 		if (!this.world) return;
 
+		this.highlighter = this.components.get(OBF.Highlighter);
+		this.highlighter.zoomToSelection = true;
+
+		// const randomSelectionName = Math.random().toString(36).substring(2, 15);
 		this.highlighter.config.hoverColor = this.hoverColor;
 		this.highlighter.config.selectionColor = this.selectionColor;
-		this.highlighter.setup({ world: this.world });
+		console.log("setting up highlighter");
 
-		this.highlighter.events.select.onHighlight.add(async (fragmentIdMap) => {
+		const config: Partial<OBF.HighlighterConfig> = {
+			world: this.world,
+		};
+		this.highlighter.setup(config);
+		console.log("highlighter was setup");
+
+		// this is hardcoded into the library
+		const selectEvent = this.highlighter.events["select"];
+
+		selectEvent.onHighlight.add(async (fragmentIdMap) => {
 			// no need to clear selection here, as it will be cleared each time before this event is called
 			await this.setPowerBiSelection(fragmentIdMap);
 		});
 
-		this.highlighter.events.select.onClear.add(async () => {
+		selectEvent.onClear.add(async () => {
 			await this.clearPowerBiSelection();
 		});
 	}
@@ -263,6 +277,7 @@ export class Viewer {
 			// Clear any existing fragments from the scene
 			this.world.scene.three.children.forEach((child) => {
 				if (child instanceof THREE.Group) {
+					console.log("removing child", child);
 					this.world.scene.three.remove(child);
 				}
 			});
@@ -270,8 +285,7 @@ export class Viewer {
 			// Add the fragments group to the scene
 			this.world.scene.three.add(fragmentsGroup);
 
-			// Force a render update
-			// this.world.renderer.three.render(this.world.scene.three, this.world.camera.three);
+			// this.setupHighlighter();
 
 			this.modelLoaded = true;
 			console.log("Loading model finished, fragments group added to scene");
