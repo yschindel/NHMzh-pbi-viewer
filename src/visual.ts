@@ -28,6 +28,7 @@ export class Visual implements IVisual {
 	private messageOverlay: HTMLDivElement;
 
 	constructor(options: VisualConstructorOptions) {
+		console.log("Creating Visual");
 		console.log("constructor options", options);
 		this.target = options.element;
 		this.visualHost = options.host;
@@ -64,61 +65,72 @@ export class Visual implements IVisual {
 	}
 
 	async update(options: VisualUpdateOptions) {
-		switch (options.type) {
-			case powerbi.VisualUpdateType.Resize:
-			case powerbi.VisualUpdateType.ResizeEnd:
-			case powerbi.VisualUpdateType.Style:
-			case powerbi.VisualUpdateType.ViewMode:
-			case powerbi.VisualUpdateType.Resize + powerbi.VisualUpdateType.ResizeEnd:
-				// @ts-ignore
-				console.log("Ignoring update type", powerbi.VisualUpdateType[options.type]);
+		try {
+			switch (options.type) {
+				case powerbi.VisualUpdateType.Resize:
+				case powerbi.VisualUpdateType.ResizeEnd:
+				case powerbi.VisualUpdateType.Style:
+				case powerbi.VisualUpdateType.ViewMode:
+				case powerbi.VisualUpdateType.Resize + powerbi.VisualUpdateType.ResizeEnd:
+					// @ts-ignore
+					console.log("Ignoring update type", powerbi.VisualUpdateType[options.type]);
+					return;
+				default:
+					// @ts-ignore
+					console.log("Processing update type", powerbi.VisualUpdateType[options.type]);
+					break;
+			}
+			console.log("options", options);
+
+			const dataView = options.dataViews[0];
+
+			if (!this.ensureConfig(dataView)) return;
+
+			// Show loading message while loading model
+			const fileId = dataView.table.rows[0][this.getColumnIndex(dataView, "First model_blob_id")] as string;
+			const apiKey = dataView.table.rows[0][this.getColumnIndex(dataView, "api_key")] as string;
+			const serverUrl = dataView.table.rows[0][this.getColumnIndex(dataView, "server_url")] as string;
+			if (this.fileId !== fileId) {
+				this.showMessage("Loading model...");
+
+				console.log("creating viewer");
+				if (!this.viewer) {
+					this.viewer = new Viewer(this.target, this.selectionManager);
+				}
+				console.log("Loading model", fileId);
+				if (this.viewer.modelLoaded) {
+					await this.viewer.unloadModel();
+				}
+				await this.viewer.loadModel(fileId, apiKey, serverUrl);
+				this.fileId = fileId;
+				this.hideMessage();
+			}
+
+			// build inital selectionIdMap to allow user selection in the viewer
+			const uniqueIds = new Set();
+			const idsTable = dataView.table;
+			console.log("building selectionIdMap");
+			idsTable.rows.forEach((row: DataViewTableRow, rowIndex: number) => {
+				const id = row[this.getColumnIndex(dataView, "id")] as string;
+				if (uniqueIds.has(id)) return;
+				uniqueIds.add(id);
+				const selectionId: ISelectionId = this.visualHost.createSelectionIdBuilder().withTable(idsTable, rowIndex).createSelectionId();
+				this.viewer.selectionIdMap.set(id, selectionId);
+			});
+
+			// make sure the viewer setup has finished it's async operation
+			if (!this.viewer || !this.viewer.modelLoaded || !options.dataViews) return;
+
+			if (!dataView || !dataView.table || !dataView.table.rows || !dataView.table.columns) {
+				console.log("Invalid data");
+				this.showMessage("Error loading model");
 				return;
-			default:
-				// @ts-ignore
-				console.log("Processing update type", powerbi.VisualUpdateType[options.type]);
-				break;
+			}
+
+			// this.handleSelectionFromPBI(dataView);
+		} catch (error) {
+			console.error("Error updating visual", error);
 		}
-		console.log("options", options);
-
-		const dataView = options.dataViews[0];
-
-		if (!this.ensureConfig(dataView)) return;
-
-		// Show loading message while loading model
-		const fileId = dataView.table.rows[0][this.getColumnIndex(dataView, "fileid")] as string;
-		const apiKey = dataView.table.rows[0][this.getColumnIndex(dataView, "api_key")] as string;
-		const serverUrl = dataView.table.rows[0][this.getColumnIndex(dataView, "server_url")] as string;
-		if (this.fileId !== fileId) {
-			this.showMessage("Loading model...");
-			console.log("creating viewer");
-			this.viewer = new Viewer(this.target, this.selectionManager);
-			console.log("Loading model", fileId);
-			await this.viewer.loadModel(fileId, apiKey, serverUrl);
-			this.fileId = fileId;
-			this.hideMessage();
-		}
-
-		// build inital selectionIdMap to allow user selection in the viewer
-		const uniqueIds = new Set();
-		const idsTable = dataView.table;
-		idsTable.rows.forEach((row: DataViewTableRow, rowIndex: number) => {
-			const id = row[this.getColumnIndex(dataView, "id")] as string;
-			if (uniqueIds.has(id)) return;
-			uniqueIds.add(id);
-			const selectionId: ISelectionId = this.visualHost.createSelectionIdBuilder().withTable(idsTable, rowIndex).createSelectionId();
-			this.viewer.selectionIdMap.set(id, selectionId);
-		});
-
-		// make sure the viewer setup has finished it's async operation
-		if (!this.viewer || !this.viewer.modelLoaded || !options.dataViews) return;
-
-		if (!dataView || !dataView.table || !dataView.table.rows || !dataView.table.columns) {
-			console.log("Invalid data");
-			this.showMessage("Error loading model");
-			return;
-		}
-
-		this.handleSelection(dataView);
 	}
 
 	/**
@@ -133,7 +145,8 @@ export class Visual implements IVisual {
 	 * Handles the selection part of the visual update
 	 * @param dataView The data view to handle
 	 */
-	private handleSelection(dataView: powerbi.DataView) {
+	private handleSelectionFromPBI(dataView: powerbi.DataView) {
+		console.log("handleSelectionFromPBI", dataView);
 		const idColumnIndex = this.getColumnIndex(dataView, "id");
 		if (idColumnIndex === -1) return;
 
@@ -142,7 +155,7 @@ export class Visual implements IVisual {
 	}
 
 	private ensureConfig(dataView: powerbi.DataView) {
-		console.log("dataView", dataView);
+		console.log("ensureConfig", dataView);
 		if (!dataView) {
 			console.log("No data view");
 			return false;
@@ -161,10 +174,10 @@ export class Visual implements IVisual {
 			return false;
 		}
 
-		const fileIdColumnIndex = this.getColumnIndex(dataView, "fileid");
+		const fileIdColumnIndex = this.getColumnIndex(dataView, "First model_blob_id");
 		if (fileIdColumnIndex === -1) {
-			console.log("Invalid File Path field");
-			this.showMessage("Drag <b>fileid</b> measure from the 'Measure Table' into the <b>File Id</b> field");
+			console.log("Invalid model_blob_id field");
+			this.showMessage("Drag <b>model_blob_id</b> measure from the 'All Files' table into the <b>Model Blob Id</b> field");
 			return false;
 		}
 

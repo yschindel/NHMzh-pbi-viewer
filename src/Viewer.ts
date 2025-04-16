@@ -12,9 +12,9 @@ import { FragmentIdMap } from "@thatopen/fragments";
  * The Viewer class is responsible for rendering the 3D model in the Power BI visual.
  */
 export class Viewer {
-	components = new OBC.Components();
+	components: OBC.Components;
 	container: HTMLDivElement;
-	fragmentManager = this.components.get(OBC.FragmentsManager);
+	fragmentManager: OBC.FragmentsManager;
 	// allFragmentsIdMap: FragmentIdMap;
 	fileName: string; // The name of the file to be loaded from the server
 	modelLoaded: boolean = false;
@@ -30,8 +30,8 @@ export class Viewer {
 
 	private selectionColor: THREE.Color = new THREE.Color("#00639c");
 	private hoverColor: THREE.Color = new THREE.Color("#328da8");
-	private highlighter = this.components.get(OBF.Highlighter);
-	private hider = this.components.get(OBC.Hider);
+	private highlighter: OBF.Highlighter;
+	private hider: OBC.Hider;
 
 	/**
 	 * Constructor for the Viewer class. Sets up the viewer ready to load a model.
@@ -39,9 +39,18 @@ export class Viewer {
 	 * @param target The target element to render the viewer in
 	 */
 	constructor(target: HTMLElement, selectionManager: ISelectionManager) {
+		console.log("Viewer constructor");
+		this.components = new OBC.Components();
+		this.fragmentManager = this.components.get(OBC.FragmentsManager);
+		this.highlighter = this.components.get(OBF.Highlighter);
+		this.hider = this.components.get(OBC.Hider);
 		this.target = target;
 		this.selectionManager = selectionManager;
 		this.initScene();
+	}
+
+	dispose() {
+		this.components.dispose();
 	}
 
 	/**
@@ -228,16 +237,57 @@ export class Viewer {
 	 * @param apiKey The API key to be used to authenticate the request
 	 * @param serverUrl The server URL to be used to load the file
 	 */
-	async loadModel(fileId: string, apiKey: string, serverUrl: string) {
-		const loader = new ModelLoader(fileId, apiKey, serverUrl);
+	async loadModel(fileName: string, apiKey: string, serverUrl: string) {
+		console.log("Starting model load for file:", fileName);
+		const loader = new ModelLoader(fileName, apiKey, serverUrl);
 
 		const file = await loader.loadFragments();
 		if (file) {
+			console.log("Fragments loaded, creating fragments group");
 			const fragmentsGroup = this.fragmentManager.load(file);
+
+			if (!fragmentsGroup) {
+				console.error("Failed to create fragments group");
+				return;
+			}
+
+			// Log the fragments group details
+			console.log("Fragments group created:", {
+				items: fragmentsGroup.items.length,
+				coordinationMatrix: fragmentsGroup.coordinationMatrix,
+			});
+
+			// Reset camera position to default
+			this.world.camera.controls.setLookAt(12, 6, 8, 0, 0, -10);
+
+			// Clear any existing fragments from the scene
+			this.world.scene.three.children.forEach((child) => {
+				if (child instanceof THREE.Group) {
+					this.world.scene.three.remove(child);
+				}
+			});
+
+			// Add the fragments group to the scene
 			this.world.scene.three.add(fragmentsGroup);
+
+			// Force a render update
+			// this.world.renderer.three.render(this.world.scene.three, this.world.camera.three);
+
 			this.modelLoaded = true;
-			console.log("Loading model finished");
+			console.log("Loading model finished, fragments group added to scene");
+			console.log("Scene children count:", this.world.scene.three.children.length);
+			console.log("Scene children:", this.world.scene.three.children);
 			this.createResetButton();
+		} else {
+			console.error("Failed to load fragments");
 		}
+	}
+
+	async unloadModel() {
+		this.world.scene.three.children.forEach((child) => {
+			if (child instanceof THREE.Group) {
+				this.world.scene.three.remove(child);
+			}
+		});
 	}
 }

@@ -5,7 +5,7 @@ import * as OBC from "@thatopen/components";
  * Class for loading compressed IFC fragments file from the server
  */
 export class ModelLoader {
-	fileId: string; // The id of the file to be loaded from the server
+	fileName: string; // The id of the file to be loaded from the server
 	apiKey: string;
 	serverUrl: string;
 	file: Uint8Array;
@@ -14,12 +14,13 @@ export class ModelLoader {
 
 	/**
 	 * Initialize the ModelLoader
-	 * @param fileId The id of the file to be loaded from the server
+	 * @param fileName The id of the file to be loaded from the server. This should be in the format:
+	 * <project>/<filename>_<timestamp>.gz
 	 * @param apiKey The API key to be used to authenticate the request
-	 * @param serverUrl The server URL including the endpoint to be used to load the file
+	 * @param serverUrl The server URL including the endpoint to be used to load the file. Example: https://pbi-server.com/files
 	 */
-	constructor(fileId: string, apiKey: string, serverUrl: string) {
-		if (!fileId) {
+	constructor(fileName: string, apiKey: string, serverUrl: string) {
+		if (!fileName) {
 			throw new Error("fileId is required");
 		}
 
@@ -29,7 +30,7 @@ export class ModelLoader {
 		if (!serverUrl) {
 			throw new Error("serverUrl is required");
 		}
-		this.fileId = fileId;
+		this.fileName = fileName;
 		this.apiKey = apiKey;
 		this.serverUrl = serverUrl;
 		this.components = new OBC.Components();
@@ -67,7 +68,7 @@ export class ModelLoader {
 	 * @returns The compressed file as an ArrayBuffer
 	 */
 	async fetchFile(): Promise<ArrayBuffer> {
-		const res = await fetch(`${this.serverUrl}?id=${this.fileId}`, {
+		const res = await fetch(`${this.serverUrl}?id=${this.fileName}`, {
 			method: "GET",
 			mode: "cors",
 			headers: {
