@@ -1,6 +1,17 @@
 import { inflate } from "pako";
 import * as OBC from "@thatopen/components";
 
+export interface Metadata {
+	file: string;
+	project: string;
+	timestamp: string;
+}
+
+export interface FileData {
+	metadata: Metadata;
+	file: Uint8Array;
+}
+
 /**
  * Class for loading compressed IFC fragments file from the server
  */
@@ -9,6 +20,7 @@ export class ModelLoader {
 	apiKey: string;
 	serverUrl: string;
 	file: Uint8Array;
+	metadata: Metadata;
 	components: OBC.Components;
 	ifcLoader: OBC.IfcLoader;
 
@@ -42,12 +54,16 @@ export class ModelLoader {
 	 * @param maxRetries The maximum number of retries. Default is 3.
 	 * @returns The decompressed file as a Uint8Array, or null if all retries fail.
 	 */
-	async loadFragments(maxRetries: number = 3): Promise<Uint8Array | null> {
+	async loadFragments(maxRetries: number = 3): Promise<FileData | null> {
 		let retries = 0;
 		while (retries < maxRetries) {
 			try {
 				const file = await this.fetchFile();
-				return this.decompress(file);
+				const decompressedFile = this.decompress(file);
+				return {
+					metadata: this.metadata,
+					file: decompressedFile,
+				};
 			} catch (error) {
 				console.error(`Attempt ${retries + 1} failed:`, error);
 				retries++;
@@ -80,6 +96,28 @@ export class ModelLoader {
 			const text = await res.text();
 			throw new Error(`Failed to fetch file: ${res.statusText}, ${text}`);
 		}
+
+		// Log all metadata headers
+		const metadataHeaders: Record<string, string> = {};
+		res.headers.forEach((value, key) => {
+			if (key.toLowerCase().startsWith("x-metadata-")) {
+				// Store with original header name but without the x-metadata- prefix
+				const metadataKey = key.slice("x-metadata-".length);
+				metadataHeaders[metadataKey] = value;
+			}
+		});
+		console.log("File metadata:", metadataHeaders);
+
+		const metadata: Metadata = {
+			file: metadataHeaders["filename"],
+			project: metadataHeaders["projectname"],
+			timestamp: metadataHeaders["timestamp"],
+		};
+
+		this.metadata = metadata;
+
+		console.log("file fetched");
+		console.log("response", res);
 		return await res.arrayBuffer();
 	}
 

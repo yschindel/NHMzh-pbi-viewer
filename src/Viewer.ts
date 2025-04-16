@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import ISelectionManager = powerbi.extensibility.ISelectionManager;
 import ISelectionId = powerbi.visuals.ISelectionId;
-import { ModelLoader } from "./ModelLoader";
+import { Metadata, ModelLoader } from "./ModelLoader";
 import { FragmentIdMap } from "@thatopen/fragments";
 
 /**
@@ -136,8 +136,8 @@ export class Viewer {
 		resetButton.style.zIndex = "2001";
 		resetButton.style.padding = "5px 10px";
 		resetButton.style.backgroundColor = "#ffffff";
-		resetButton.style.border = "1px solid #cccccc";
-		resetButton.style.borderRadius = "6px";
+		resetButton.style.border = "none";
+		resetButton.style.borderRadius = "3px";
 		resetButton.style.cursor = "pointer";
 		resetButton.style.fontSize = "10px";
 
@@ -157,6 +157,43 @@ export class Viewer {
 		this.container.appendChild(resetButton);
 	}
 
+	private createMetadataFooter(metadata: Metadata) {
+		const existingFooter = document.querySelector(".metadata-footer");
+		if (existingFooter) {
+			existingFooter.remove();
+		}
+
+		//use format dd/mm/yyyy HH:mm:ss (24h)
+		const formattedTimestamp = new Date(metadata.timestamp).toLocaleString("en-GB", {
+			year: "numeric",
+			month: "2-digit",
+			day: "2-digit",
+			hour: "2-digit",
+			minute: "2-digit",
+			second: "2-digit",
+			hour12: false,
+		});
+
+		const metadataFooter = document.createElement("div");
+		metadataFooter.className = "metadata-footer";
+		metadataFooter.style.position = "absolute";
+		metadataFooter.style.bottom = "0";
+		metadataFooter.style.left = "0";
+		metadataFooter.style.right = "0";
+		metadataFooter.style.backgroundColor = "rgba(255, 255, 255, 0.9)";
+		metadataFooter.style.padding = "8px";
+		metadataFooter.style.display = "flex";
+		metadataFooter.style.justifyContent = "space-around";
+		metadataFooter.style.borderTop = "1px solid #cccccc";
+		metadataFooter.style.fontSize = "12px";
+		metadataFooter.innerHTML = `
+			<span>File: ${metadata.file}</span>
+			<span>Project: ${metadata.project}</span>
+			<span>Timestamp: ${formattedTimestamp}</span>
+		`;
+
+		this.container.appendChild(metadataFooter);
+	}
 	/**
 	 * Sets up the highlighter for the model to allow user selection
 	 */
@@ -255,10 +292,10 @@ export class Viewer {
 		console.log("Starting model load for file:", fileName);
 		const loader = new ModelLoader(fileName, apiKey, serverUrl);
 
-		const file = await loader.loadFragments();
-		if (file) {
+		const fileData = await loader.loadFragments();
+		if (fileData) {
 			console.log("Fragments loaded, creating fragments group");
-			const fragmentsGroup = this.fragmentManager.load(file);
+			const fragmentsGroup = this.fragmentManager.load(fileData.file);
 
 			if (!fragmentsGroup) {
 				console.error("Failed to create fragments group");
@@ -292,6 +329,7 @@ export class Viewer {
 			console.log("Scene children count:", this.world.scene.three.children.length);
 			console.log("Scene children:", this.world.scene.three.children);
 			this.createResetButton();
+			this.createMetadataFooter(fileData.metadata);
 		} else {
 			console.error("Failed to load fragments");
 		}
