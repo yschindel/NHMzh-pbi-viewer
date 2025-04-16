@@ -5,16 +5,16 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import ISelectionManager = powerbi.extensibility.ISelectionManager;
 import ISelectionId = powerbi.visuals.ISelectionId;
-import { ModelLoader } from "./ModelLoader";
+import { Metadata, ModelLoader } from "./ModelLoader";
 import { FragmentIdMap } from "@thatopen/fragments";
 
 /**
  * The Viewer class is responsible for rendering the 3D model in the Power BI visual.
  */
 export class Viewer {
-	components = new OBC.Components();
+	components: OBC.Components;
 	container: HTMLDivElement;
-	fragmentManager = this.components.get(OBC.FragmentsManager);
+	fragmentManager: OBC.FragmentsManager;
 	// allFragmentsIdMap: FragmentIdMap;
 	fileName: string; // The name of the file to be loaded from the server
 	modelLoaded: boolean = false;
@@ -30,8 +30,8 @@ export class Viewer {
 
 	private selectionColor: THREE.Color = new THREE.Color("#00639c");
 	private hoverColor: THREE.Color = new THREE.Color("#328da8");
-	private highlighter = this.components.get(OBF.Highlighter);
-	private hider = this.components.get(OBC.Hider);
+	private highlighter: OBF.Highlighter;
+	private hider: OBC.Hider;
 
 	/**
 	 * Constructor for the Viewer class. Sets up the viewer ready to load a model.
@@ -39,9 +39,19 @@ export class Viewer {
 	 * @param target The target element to render the viewer in
 	 */
 	constructor(target: HTMLElement, selectionManager: ISelectionManager) {
+		console.log("Viewer constructor");
+		this.components = new OBC.Components();
+		this.fragmentManager = this.components.get(OBC.FragmentsManager);
+
+		// this.highlighter = this.components.get(OBF.Highlighter);
+		this.hider = this.components.get(OBC.Hider);
 		this.target = target;
 		this.selectionManager = selectionManager;
 		this.initScene();
+	}
+
+	dispose() {
+		this.components.dispose();
 	}
 
 	/**
@@ -126,8 +136,8 @@ export class Viewer {
 		resetButton.style.zIndex = "2001";
 		resetButton.style.padding = "5px 10px";
 		resetButton.style.backgroundColor = "#ffffff";
-		resetButton.style.border = "1px solid #cccccc";
-		resetButton.style.borderRadius = "6px";
+		resetButton.style.border = "none";
+		resetButton.style.borderRadius = "3px";
 		resetButton.style.cursor = "pointer";
 		resetButton.style.fontSize = "10px";
 
@@ -147,6 +157,43 @@ export class Viewer {
 		this.container.appendChild(resetButton);
 	}
 
+	private createMetadataFooter(metadata: Metadata) {
+		const existingFooter = document.querySelector(".metadata-footer");
+		if (existingFooter) {
+			existingFooter.remove();
+		}
+
+		//use format dd/mm/yyyy HH:mm:ss (24h)
+		const formattedTimestamp = new Date(metadata.timestamp).toLocaleString("en-GB", {
+			year: "numeric",
+			month: "2-digit",
+			day: "2-digit",
+			hour: "2-digit",
+			minute: "2-digit",
+			second: "2-digit",
+			hour12: false,
+		});
+
+		const metadataFooter = document.createElement("div");
+		metadataFooter.className = "metadata-footer";
+		metadataFooter.style.position = "absolute";
+		metadataFooter.style.bottom = "0";
+		metadataFooter.style.left = "0";
+		metadataFooter.style.right = "0";
+		metadataFooter.style.backgroundColor = "rgba(255, 255, 255, 0.9)";
+		metadataFooter.style.padding = "8px";
+		metadataFooter.style.display = "flex";
+		metadataFooter.style.justifyContent = "space-around";
+		metadataFooter.style.borderTop = "1px solid #cccccc";
+		metadataFooter.style.fontSize = "12px";
+		metadataFooter.innerHTML = `
+			<span>File: ${metadata.file}</span>
+			<span>Project: ${metadata.project}</span>
+			<span>Timestamp: ${formattedTimestamp}</span>
+		`;
+
+		this.container.appendChild(metadataFooter);
+	}
 	/**
 	 * Sets up the highlighter for the model to allow user selection
 	 */
@@ -154,16 +201,29 @@ export class Viewer {
 		console.log("setupHighlighter");
 		if (!this.world) return;
 
+		this.highlighter = this.components.get(OBF.Highlighter);
+		this.highlighter.zoomToSelection = true;
+
+		// const randomSelectionName = Math.random().toString(36).substring(2, 15);
 		this.highlighter.config.hoverColor = this.hoverColor;
 		this.highlighter.config.selectionColor = this.selectionColor;
-		this.highlighter.setup({ world: this.world });
+		console.log("setting up highlighter");
 
-		this.highlighter.events.select.onHighlight.add(async (fragmentIdMap) => {
+		const config: Partial<OBF.HighlighterConfig> = {
+			world: this.world,
+		};
+		this.highlighter.setup(config);
+		console.log("highlighter was setup");
+
+		// this is hardcoded into the library
+		const selectEvent = this.highlighter.events["select"];
+
+		selectEvent.onHighlight.add(async (fragmentIdMap) => {
 			// no need to clear selection here, as it will be cleared each time before this event is called
 			await this.setPowerBiSelection(fragmentIdMap);
 		});
 
-		this.highlighter.events.select.onClear.add(async () => {
+		selectEvent.onClear.add(async () => {
 			await this.clearPowerBiSelection();
 		});
 	}
@@ -228,16 +288,58 @@ export class Viewer {
 	 * @param apiKey The API key to be used to authenticate the request
 	 * @param serverUrl The server URL to be used to load the file
 	 */
-	async loadModel(fileId: string, apiKey: string, serverUrl: string) {
-		const loader = new ModelLoader(fileId, apiKey, serverUrl);
+	async loadModel(fileName: string, apiKey: string, serverUrl: string) {
+		console.log("Starting model load for file:", fileName);
+		const loader = new ModelLoader(fileName, apiKey, serverUrl);
 
-		const file = await loader.loadFragments();
-		if (file) {
-			const fragmentsGroup = this.fragmentManager.load(file);
+		const fileData = await loader.loadFragments();
+		if (fileData) {
+			console.log("Fragments loaded, creating fragments group");
+			const fragmentsGroup = this.fragmentManager.load(fileData.file);
+
+			if (!fragmentsGroup) {
+				console.error("Failed to create fragments group");
+				return;
+			}
+
+			// Log the fragments group details
+			console.log("Fragments group created:", {
+				items: fragmentsGroup.items.length,
+				coordinationMatrix: fragmentsGroup.coordinationMatrix,
+			});
+
+			// Reset camera position to default
+			this.world.camera.controls.setLookAt(12, 6, 8, 0, 0, -10);
+
+			// Clear any existing fragments from the scene
+			this.world.scene.three.children.forEach((child) => {
+				if (child instanceof THREE.Group) {
+					console.log("removing child", child);
+					this.world.scene.three.remove(child);
+				}
+			});
+
+			// Add the fragments group to the scene
 			this.world.scene.three.add(fragmentsGroup);
+
+			// this.setupHighlighter();
+
 			this.modelLoaded = true;
-			console.log("Loading model finished");
+			console.log("Loading model finished, fragments group added to scene");
+			console.log("Scene children count:", this.world.scene.three.children.length);
+			console.log("Scene children:", this.world.scene.three.children);
 			this.createResetButton();
+			this.createMetadataFooter(fileData.metadata);
+		} else {
+			console.error("Failed to load fragments");
 		}
+	}
+
+	async unloadModel() {
+		this.world.scene.three.children.forEach((child) => {
+			if (child instanceof THREE.Group) {
+				this.world.scene.three.remove(child);
+			}
+		});
 	}
 }

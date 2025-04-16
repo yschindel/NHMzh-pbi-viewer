@@ -6,8 +6,8 @@
 			"kind": "Grouping"
 		},
 		{
-			"displayName": "File Id",
-			"name": "file_id",
+			"displayName": "Model Blob Id",
+			"name": "model_blob_id",
 			"kind": "Measure",
 			"preferredTypes": [
 				{
@@ -82,7 +82,7 @@
 			"conditions": [
 				{
 					"ids": { "min": 1 },
-					"file_id": { "max": 1 },
+					"model_blob_id": { "max": 1 },
 					"api_key": { "max": 1 },
 					"server_url": { "max": 1 }
 				}
@@ -96,7 +96,7 @@
 					},
 					"select": [
 						{ "for": { "in": "ids" } },
-						{ "bind": { "to": "file_id" } },
+						{ "bind": { "to": "model_blob_id" } },
 						{ "bind": { "to": "api_key" } },
 						{ "bind": { "to": "server_url" } }
 					]
@@ -119,7 +119,7 @@
 		{
 			"name": "WebAccess",
 			"essential": true,
-			"parameters": ["http://localhost:3000", "https://pbi-server.fastbim5.eu"]
+			"parameters": ["http://localhost:3000", "https://pbi-server.fastbim5.eu", "https://pbi-server.test.fastbim5.eu"]
 		}
 	],
 	"migration": {

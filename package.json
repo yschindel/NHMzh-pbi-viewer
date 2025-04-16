@@ -17,9 +17,9 @@
 		"cert": "pbiviz install-cert"
 	},
 	"dependencies": {
-		"@thatopen/components": "^2.3.0",
-		"@thatopen/components-front": "^2.3.0",
-		"@thatopen/fragments": "^2.3.0",
+		"@thatopen/components": "^2.4.10",
+		"@thatopen/components-front": "^2.4.10",
+		"@thatopen/fragments": "^3.0.2",
 		"@types/d3": "7.4.3",
 		"d3": "7.9.0",
 		"pako": "^2.1.0",
