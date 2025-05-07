@@ -123,7 +123,8 @@
 				"http://localhost:3000",
 				"https://pbi-server.fastbim5.eu",
 				"https://pbi-server.test.fastbim5.eu",
-				"https://213.199.58.235:5643"
+				"https://213.199.58.235:5643",
+				"http://213.199.58.235:5643"
 			]
 		}
 	],
