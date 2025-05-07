@@ -119,7 +119,12 @@
 		{
 			"name": "WebAccess",
 			"essential": true,
-			"parameters": ["http://localhost:3000", "https://pbi-server.fastbim5.eu", "https://pbi-server.test.fastbim5.eu"]
+			"parameters": [
+				"http://localhost:3000",
+				"https://pbi-server.fastbim5.eu",
+				"https://pbi-server.test.fastbim5.eu",
+				"https://213.199.58.235:5643"
+			]
 		}
 	],
 	"migration": {
