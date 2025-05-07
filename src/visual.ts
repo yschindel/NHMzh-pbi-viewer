@@ -87,7 +87,12 @@ export class Visual implements IVisual {
 			if (!this.ensureConfig(dataView)) return;
 
 			// Show loading message while loading model
-			const fileId = dataView.table.rows[0][this.getColumnIndex(dataView, "First model_blob_id")] as string;
+			let fileId = "";
+			try {
+				fileId = dataView.table.rows[0][this.getColumnIndex(dataView, "First model_blob_id")] as string;
+			} catch (error) {
+				fileId = dataView.table.rows[0][this.getColumnIndex(dataView, "Erstes Datum: model_blob_id")] as string;
+			}
 			const apiKey = dataView.table.rows[0][this.getColumnIndex(dataView, "api_key")] as string;
 			const serverUrl = dataView.table.rows[0][this.getColumnIndex(dataView, "server_url")] as string;
 			if (this.fileId !== fileId) {
