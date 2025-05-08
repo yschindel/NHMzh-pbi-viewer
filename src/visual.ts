@@ -113,9 +113,8 @@ export class Visual implements IVisual {
 				await this.viewer.loadModel(fileId, apiKey, serverUrl);
 
 				// Use the error message from the viewer if available
-				const errorMessage = this.viewer.errorMessage;
-				if (errorMessage) {
-					this.showMessage(errorMessage);
+				if (this.viewer.errorMessage) {
+					this.showMessage(this.viewer.errorMessage);
 					return; // Exit early since we can't proceed with the error
 				}
 				this.fileId = fileId;

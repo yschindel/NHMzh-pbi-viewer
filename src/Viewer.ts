@@ -294,6 +294,7 @@ export class Viewer {
 		console.log("Starting model load for file:", fileName);
 		const loader = new ModelLoader(fileName, apiKey, serverUrl);
 
+		loader.errorMessage = "";
 		const fileData = await loader.loadFragments();
 		if (loader.errorMessage) {
 			this.errorMessage = loader.errorMessage;
