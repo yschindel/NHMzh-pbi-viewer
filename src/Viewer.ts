@@ -332,6 +332,7 @@ export class Viewer {
 			// this.setupHighlighter();
 
 			this.modelLoaded = true;
+			this.errorMessage = "";
 			console.log("Loading model finished, fragments group added to scene");
 			console.log("Scene children count:", this.world.scene.three.children.length);
 			console.log("Scene children:", this.world.scene.three.children);
