@@ -294,8 +294,11 @@ export class Viewer {
 		const loader = new ModelLoader(fileName, apiKey, serverUrl);
 
 		const fileData = await loader.loadFragments();
-		this.errorMessage = loader.errorMessage;
-
+		if (loader.errorMessage) {
+			this.errorMessage = loader.errorMessage;
+		} else {
+			this.errorMessage = "";
+		}
 		if (fileData) {
 			console.log("Fragments loaded, creating fragments group");
 			const fragmentsGroup = this.fragmentManager.load(fileData.file);
