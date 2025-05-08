@@ -95,8 +95,9 @@ export class ModelLoader {
 		// check if the response is ok
 		if (!res.ok) {
 			const text = await res.text();
-			this.errorMessage = JSON.stringify(res);
-			throw new Error(`Failed to fetch file: ${res.statusText}, ${text}`);
+			// Create a more informative error message with relevant response properties
+			this.errorMessage = `Error ${res.status}: ${res.statusText}\nURL: ${this.serverUrl}?id=${this.fileName}\nResponse: ${text}`;
+			throw new Error(this.errorMessage);
 		}
 		this.errorMessage = "";
 
