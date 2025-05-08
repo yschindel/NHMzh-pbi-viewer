@@ -98,6 +98,7 @@ export class ModelLoader {
 			this.errorMessage = `Failed to fetch file: ${res.statusText}, ${text}`;
 			throw new Error(`Failed to fetch file: ${res.statusText}, ${text}`);
 		}
+		this.errorMessage = "";
 
 		// Log all metadata headers
 		const metadataHeaders: Record<string, string> = {};
