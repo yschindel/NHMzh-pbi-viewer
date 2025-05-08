@@ -23,6 +23,7 @@ export class ModelLoader {
 	metadata: Metadata;
 	components: OBC.Components;
 	ifcLoader: OBC.IfcLoader;
+	errorMessage: string;
 
 	/**
 	 * Initialize the ModelLoader
@@ -94,6 +95,7 @@ export class ModelLoader {
 		// check if the response is ok
 		if (!res.ok) {
 			const text = await res.text();
+			this.errorMessage = `Failed to fetch file: ${res.statusText}, ${text}`;
 			throw new Error(`Failed to fetch file: ${res.statusText}, ${text}`);
 		}
 
