@@ -87,22 +87,38 @@ export class Visual implements IVisual {
 			if (!this.ensureConfig(dataView)) return;
 
 			// Show loading message while loading model
-			let fileId = "";
-			try {
-				fileId = dataView.table.rows[0][this.getColumnIndex(dataView, "First model_blob_id")] as string;
-			} catch (error) {
-				fileId = dataView.table.rows[0][this.getColumnIndex(dataView, "Erstes Datum: model_blob_id")] as string;
+			let fileIdColumnIndex = this.getColumnIndex(dataView, "First model_blob_id");
+			if (fileIdColumnIndex == -1) {
+				fileIdColumnIndex = this.getColumnIndex(dataView, "Erstes Datum: model_blob_id");
 			}
+			const modelBlobId = dataView.table.rows[0][fileIdColumnIndex] as string;
+
 			const apiKey = dataView.table.rows[0][this.getColumnIndex(dataView, "api_key")] as string;
 			const serverUrl = dataView.table.rows[0][this.getColumnIndex(dataView, "server_url")] as string;
-			if (this.fileId !== fileId) {
+
+			if (!modelBlobId) {
+				this.showMessage("No model blob id found");
+				return;
+			}
+
+			if (!apiKey) {
+				this.showMessage("No api key found");
+				return;
+			}
+
+			if (!serverUrl) {
+				this.showMessage("No server url found");
+				return;
+			}
+
+			if (this.fileId !== modelBlobId) {
 				this.showMessage("Loading model...");
 
 				console.log("creating viewer");
 				if (!this.viewer) {
 					this.viewer = new Viewer(this.target, this.selectionManager);
 				}
-				console.log("Loading model", fileId);
+				console.log("Loading model", modelBlobId);
 				if (this.viewer.modelLoaded) {
 					await this.viewer.unloadModel();
 					this.target.removeChild(this.viewer.container);
@@ -110,14 +126,14 @@ export class Visual implements IVisual {
 				}
 
 				this.viewer.errorMessage = ""; // Clear error message before loading
-				await this.viewer.loadModel(fileId, apiKey, serverUrl);
+				await this.viewer.loadModel(modelBlobId, apiKey, serverUrl);
 
 				// Use the error message from the viewer if available
 				if (this.viewer.errorMessage) {
 					this.showMessage(this.viewer.errorMessage);
 					return; // Exit early since we can't proceed with the error
 				}
-				this.fileId = fileId;
+				this.fileId = modelBlobId;
 				this.hideMessage();
 			}
 
@@ -186,7 +202,7 @@ export class Visual implements IVisual {
 		const idColumnIndex = this.getColumnIndex(dataView, "id");
 		if (idColumnIndex === -1) {
 			console.log("Invalid id field");
-			this.showMessage("Drag <b>id</b> from the 'Data_Latest' table into the <b>Ids</b> field");
+			this.showMessage("Drag <b>id</b> from the 'Data_History' table into the <b>Ids</b> field");
 			return false;
 		}
 
@@ -196,7 +212,7 @@ export class Visual implements IVisual {
 		}
 		if (fileIdColumnIndex === -1) {
 			console.log("Invalid model_blob_id field");
-			this.showMessage("Drag <b>model_blob_id</b> measure from the 'All Files' table into the <b>Model Blob Id</b> field");
+			this.showMessage("Drag <b>model_blob_id</b> field from the 'Updates' table into the <b>Model Blob Id</b> field");
 			return false;
 		}
 
