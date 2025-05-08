@@ -97,7 +97,6 @@ export class Visual implements IVisual {
 			const serverUrl = dataView.table.rows[0][this.getColumnIndex(dataView, "server_url")] as string;
 			if (this.fileId !== fileId) {
 				this.showMessage("Loading model...");
-				this.viewer.errorMessage = ""; // Clear error message before loading
 
 				console.log("creating viewer");
 				if (!this.viewer) {
@@ -110,6 +109,7 @@ export class Visual implements IVisual {
 					this.viewer = new Viewer(this.target, this.selectionManager);
 				}
 
+				this.viewer.errorMessage = ""; // Clear error message before loading
 				await this.viewer.loadModel(fileId, apiKey, serverUrl);
 
 				// Use the error message from the viewer if available
