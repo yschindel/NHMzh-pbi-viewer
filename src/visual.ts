@@ -97,6 +97,7 @@ export class Visual implements IVisual {
 			const serverUrl = dataView.table.rows[0][this.getColumnIndex(dataView, "server_url")] as string;
 			if (this.fileId !== fileId) {
 				this.showMessage("Loading model...");
+				this.viewer.errorMessage = ""; // Clear error message before loading
 
 				console.log("creating viewer");
 				if (!this.viewer) {

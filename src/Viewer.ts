@@ -290,11 +290,11 @@ export class Viewer {
 	 * @param serverUrl The server URL to be used to load the file
 	 */
 	async loadModel(fileName: string, apiKey: string, serverUrl: string) {
+		this.errorMessage = ""; // Clear error message at the start
 		console.log("Starting model load for file:", fileName);
 		const loader = new ModelLoader(fileName, apiKey, serverUrl);
 
 		const fileData = await loader.loadFragments();
-		this.errorMessage = "";
 		if (loader.errorMessage) {
 			this.errorMessage = loader.errorMessage;
 		}
