@@ -85,6 +85,7 @@ export class ModelLoader {
 	 * @returns The compressed file as an ArrayBuffer
 	 */
 	async fetchFile(): Promise<ArrayBuffer> {
+		this.errorMessage = "";
 		const res = await fetch(`${this.serverUrl}?id=${this.fileName}`, {
 			method: "GET",
 			mode: "cors",
