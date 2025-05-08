@@ -181,7 +181,10 @@ export class Visual implements IVisual {
 			return false;
 		}
 
-		const fileIdColumnIndex = this.getColumnIndex(dataView, "First model_blob_id");
+		let fileIdColumnIndex = this.getColumnIndex(dataView, "First model_blob_id");
+		if (fileIdColumnIndex === -1) {
+			fileIdColumnIndex = this.getColumnIndex(dataView, "Erstes Datum: model_blob_id");
+		}
 		if (fileIdColumnIndex === -1) {
 			console.log("Invalid model_blob_id field");
 			this.showMessage("Drag <b>model_blob_id</b> measure from the 'All Files' table into the <b>Model Blob Id</b> field");
