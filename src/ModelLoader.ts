@@ -95,8 +95,13 @@ export class ModelLoader {
 		// check if the response is ok
 		if (!res.ok) {
 			const text = await res.text();
+
 			// Create a more informative error message with relevant response properties
-			this.errorMessage = `Error ${res.status}: ${res.statusText}\nURL: ${this.serverUrl}?id=${this.fileName}\nResponse: ${text}`;
+			const headers: Record<string, string> = {};
+			res.headers.forEach((value, key) => (headers[key] = value));
+			this.errorMessage = `Error ${res.status}: ${res.statusText}\nURL: ${this.serverUrl}?id=${this.fileName}\nHeaders: ${JSON.stringify(
+				headers
+			)}\nResponse: ${text}`;
 			throw new Error(this.errorMessage);
 		}
 		this.errorMessage = "";
