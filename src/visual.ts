@@ -109,12 +109,11 @@ export class Visual implements IVisual {
 					this.viewer = new Viewer(this.target, this.selectionManager);
 				}
 
-				try {
-					await this.viewer.loadModel(fileId, apiKey, serverUrl);
-				} catch (error) {
-					console.error("Error loading model", error);
-					// Use the error message from the viewer if available
-					const errorMessage = this.viewer.errorMessage || "Error loading model";
+				await this.viewer.loadModel(fileId, apiKey, serverUrl);
+
+				// Use the error message from the viewer if available
+				const errorMessage = this.viewer.errorMessage;
+				if (errorMessage) {
 					this.showMessage(errorMessage);
 					return; // Exit early since we can't proceed with the error
 				}

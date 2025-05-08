@@ -293,14 +293,9 @@ export class Viewer {
 		console.log("Starting model load for file:", fileName);
 		const loader = new ModelLoader(fileName, apiKey, serverUrl);
 
-		let fileData;
-		try {
-			fileData = await loader.loadFragments();
-		} catch (error) {
-			console.error("Failed to load fragments:", error);
-			this.errorMessage = loader.errorMessage;
-			throw error;
-		}
+		const fileData = await loader.loadFragments();
+		this.errorMessage = loader.errorMessage;
+
 		if (fileData) {
 			console.log("Fragments loaded, creating fragments group");
 			const fragmentsGroup = this.fragmentManager.load(fileData.file);
