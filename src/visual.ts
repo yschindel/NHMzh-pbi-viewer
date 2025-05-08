@@ -108,7 +108,16 @@ export class Visual implements IVisual {
 					this.target.removeChild(this.viewer.container);
 					this.viewer = new Viewer(this.target, this.selectionManager);
 				}
-				await this.viewer.loadModel(fileId, apiKey, serverUrl);
+
+				try {
+					await this.viewer.loadModel(fileId, apiKey, serverUrl);
+				} catch (error) {
+					console.error("Error loading model", error);
+					// Use the error message from the viewer if available
+					const errorMessage = this.viewer.errorMessage || "Error loading model";
+					this.showMessage(errorMessage);
+					return; // Exit early since we can't proceed with the error
+				}
 				this.fileId = fileId;
 				this.hideMessage();
 			}
@@ -137,6 +146,7 @@ export class Visual implements IVisual {
 			this.handleSelectionFromPBI(dataView);
 		} catch (error) {
 			console.error("Error updating visual", error);
+			this.showMessage("Error updating visual");
 		}
 	}
 

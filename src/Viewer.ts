@@ -23,6 +23,7 @@ export class Viewer {
 	camera: THREE.PerspectiveCamera;
 	renderer: THREE.WebGLRenderer;
 	controls: OrbitControls;
+	errorMessage: string;
 
 	private world: OBC.SimpleWorld<OBC.SimpleScene, OBC.SimpleCamera, OBC.SimpleRenderer>;
 	private target: HTMLElement;
@@ -292,7 +293,14 @@ export class Viewer {
 		console.log("Starting model load for file:", fileName);
 		const loader = new ModelLoader(fileName, apiKey, serverUrl);
 
-		const fileData = await loader.loadFragments();
+		let fileData;
+		try {
+			fileData = await loader.loadFragments();
+		} catch (error) {
+			console.error("Failed to load fragments:", error);
+			this.errorMessage = loader.errorMessage;
+			throw error;
+		}
 		if (fileData) {
 			console.log("Fragments loaded, creating fragments group");
 			const fragmentsGroup = this.fragmentManager.load(fileData.file);
